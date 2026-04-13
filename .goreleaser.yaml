@@ -1,0 +1,88 @@
+# GoReleaser configuration for GoRich library
+# Documentation: https://goreleaser.com
+
+version: 2
+
+project_name: gorich
+
+# Skip building binaries since this is a library
+builds:
+  - skip: true
+
+# Create source archive
+source:
+  enabled: true
+  name_template: "{{ .ProjectName }}-{{ .Version }}-source"
+
+# Changelog configuration
+changelog:
+  sort: asc
+  use: github
+  format: "{{ .SHA }}: {{ .Message }} (@{{ .AuthorUsername }})"
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - "(?i)typo"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: "Breaking Changes"
+      regexp: '^.*?!:.*$'
+      order: 0
+    - title: "Features"
+      regexp: '^.*?feat(\(.+\))?:.*$'
+      order: 1
+    - title: "Bug Fixes"
+      regexp: '^.*?fix(\(.+\))?:.*$'
+      order: 2
+    - title: "Performance"
+      regexp: '^.*?perf(\(.+\))?:.*$'
+      order: 3
+    - title: "Other"
+      order: 999
+
+# GitHub release configuration
+release:
+  github:
+    owner: depado
+    name: gorich
+  draft: false
+  prerelease: auto
+  mode: replace
+  name_template: "v{{ .Version }}"
+  header: |
+    ## GoRich {{ .Version }}
+
+    A Go port of Python's [Rich](https://github.com/Textualize/rich) library for beautiful terminal output.
+
+    ### Installation
+
+    ```bash
+    go get github.com/depado/gorich@v{{ .Version }}
+    ```
+
+# Announce release (optional - remove if not needed)
+# announce:
+#   skip: true
+
+# Validate before release
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+    - go build ./...
+    - go test ./...
+
+# Metadata
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+# Git configuration
+git:
+  # Only include commits since the last tag
+  ignore_tags:
+    - nightly
+  tag_sort: -version:refname
