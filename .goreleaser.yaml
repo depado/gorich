@@ -18,7 +18,7 @@ source:
 changelog:
   sort: asc
   use: github
-  format: "{{ .SHA }}: {{ .Message }} (@{{ .AuthorUsername }})"
+  format: "{{ .SHA }}: {{ .Message }}{{ with .Logins }} ({{ . }}){{ end }}"
   filters:
     exclude:
       - "^docs:"
