@@ -63,14 +63,17 @@ for _, seg := range segments {
 ```
 
 ### Thread Safety & Deadlock Prevention
-- `Progress` and `Task` use `sync.Mutex`
-- **Critical**: Release mutex before calling into `Live.Start()`/`Live.Stop()` - they call back into `Progress.getRenderable()` which needs the mutex
-- Lock ordering: Progress.mu → Task.mu → Live.mu (never reverse)
+- `Progress`, `Task`, `SpinnerColumn`, and `Spinner` use `sync.Mutex`
+- `Reader.read` and `Writer.written` use `sync/atomic` for concurrent access
+- **Critical**: `console.Render()` releases its mutex before calling hooks - hooks may call back into Console methods
+- **Critical**: Release Progress mutex before calling into `Live.Start()`/`Live.Stop()` - they call back into `Progress.getRenderable()` which needs the mutex
+- Lock ordering: Console.mu must not be held when calling RenderHook methods
 
 ### Speed Estimation
 - Uses a ring buffer of 1000 samples (see `sampleRing` in task.go)
 - Window of 30 seconds (configurable via `WithSpeedEstimatePeriod`)
-- Speed = (newest.completed - oldest.completed) / (newest.timestamp - oldest.timestamp)
+- Speed = (newest.completed - oldestInWindow.completed) / (newest.timestamp - oldestInWindow.timestamp)
+- Only samples within the speed window are used for calculation
 
 ### Style Three-State Attributes
 Styles use two bitmasks to support "explicitly off" (not just "not set"):
@@ -102,6 +105,7 @@ type Style struct {
   - `MofNCompleteColumn` - "M/N" display
   - `SeparatorColumn` - Static separator (e.g., "•")
 - `Reader`/`Writer` - io.Reader/Writer wrappers for IO progress
+- `ErrNotSeekable` - Returned by `Reader.Seek` when underlying reader doesn't support seeking
 
 ### live/
 - `Live` - Auto-refreshing display using goroutine + ticker
@@ -110,8 +114,15 @@ type Style struct {
 ### console/
 - `Console` - Terminal output with detection (isatty, color system)
 - `Renderable` interface - `Render(c *Console, opts Options) []segment.Segment`
-- `RenderHook` interface - Intercepts print calls (used by Live)
+- `RenderHook` interface - Intercepts render calls (used by Live)
 - `Options` - Rendering constraints (width, color system, etc.)
+- Console options:
+  - `WithWriter(w)` - Set output writer
+  - `WithColorSystem(cs)` - Set color system
+  - `WithForceTerminal(bool)` - Force terminal mode
+  - `WithNoColor(bool)` - Disable colors
+  - `WithWidth(int)` - Set fixed width
+  - `WithEnviron(map[string]string)` - Custom environment for testing (like Python Rich's `_environ`)
 
 ### segment/
 - `Segment` - Atomic unit: `{Text, Style, Control}`
@@ -127,7 +138,7 @@ type Style struct {
 - `Parse(string)` - Parse markup string into Text with styled spans
 - `Render(string)` - Convenience function: parse and convert to segments
 - `Strip(string)` - Remove markup tags, return plain text
-- `VisibleLength(string)` - Length of visible text (excluding markup tags)
+- `VisibleLength(string)` - Terminal cell width of visible text (handles CJK/emoji)
 - `Escape(string)` - Escape text so it won't be interpreted as markup
 
 ### spinner/

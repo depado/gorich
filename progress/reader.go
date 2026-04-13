@@ -1,16 +1,21 @@
 package progress
 
 import (
+	"errors"
 	"io"
 	"os"
+	"sync/atomic"
 )
+
+// ErrNotSeekable is returned when Seek is called on a reader that doesn't support seeking.
+var ErrNotSeekable = errors.New("reader does not support seeking")
 
 // Reader wraps an io.Reader to track progress.
 type Reader struct {
 	reader   io.Reader
 	progress *Progress
 	taskID   TaskID
-	read     int64
+	read     int64 // accessed atomically
 }
 
 // NewReader creates a progress-tracking reader.
@@ -26,7 +31,7 @@ func NewReader(r io.Reader, p *Progress, taskID TaskID) *Reader {
 func (r *Reader) Read(p []byte) (n int, err error) {
 	n, err = r.reader.Read(p)
 	if n > 0 {
-		r.read += int64(n)
+		atomic.AddInt64(&r.read, int64(n))
 		r.progress.Advance(r.taskID, float64(n))
 	}
 	return n, err
@@ -44,7 +49,7 @@ func (r *Reader) Close() error {
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	seeker, ok := r.reader.(io.Seeker)
 	if !ok {
-		return 0, io.ErrNoProgress
+		return 0, ErrNotSeekable
 	}
 
 	newPos, err := seeker.Seek(offset, whence)
@@ -55,14 +60,14 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	// Update progress to reflect new position
 	completed := float64(newPos)
 	r.progress.Update(r.taskID, TaskUpdateConfig{Completed: &completed})
-	r.read = newPos
+	atomic.StoreInt64(&r.read, newPos)
 
 	return newPos, nil
 }
 
 // BytesRead returns the total bytes read so far.
 func (r *Reader) BytesRead() int64 {
-	return r.read
+	return atomic.LoadInt64(&r.read)
 }
 
 // WrapReader wraps an io.Reader with progress tracking.
@@ -133,7 +138,7 @@ type Writer struct {
 	writer   io.Writer
 	progress *Progress
 	taskID   TaskID
-	written  int64
+	written  int64 // accessed atomically
 }
 
 // NewWriter creates a progress-tracking writer.
@@ -149,7 +154,7 @@ func NewWriter(w io.Writer, p *Progress, taskID TaskID) *Writer {
 func (w *Writer) Write(p []byte) (n int, err error) {
 	n, err = w.writer.Write(p)
 	if n > 0 {
-		w.written += int64(n)
+		atomic.AddInt64(&w.written, int64(n))
 		w.progress.Advance(w.taskID, float64(n))
 	}
 	return n, err
@@ -165,7 +170,7 @@ func (w *Writer) Close() error {
 
 // BytesWritten returns the total bytes written so far.
 func (w *Writer) BytesWritten() int64 {
-	return w.written
+	return atomic.LoadInt64(&w.written)
 }
 
 // WrapWriter wraps an io.Writer with progress tracking.

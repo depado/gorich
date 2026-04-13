@@ -1,6 +1,8 @@
 package spinner
 
 import (
+	"sync"
+
 	"github.com/depado/gorich/console"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/style"
@@ -11,6 +13,7 @@ type Spinner struct {
 	Name      string
 	Style     *style.Style
 	Speed     float64 // Multiplier for animation speed (1.0 = normal)
+	mu        sync.Mutex
 	startTime float64
 }
 
@@ -45,12 +48,14 @@ func (s *Spinner) Render(currentTime float64) []segment.Segment {
 		return nil
 	}
 
+	s.mu.Lock()
 	// Calculate which frame to show
 	elapsed := currentTime - s.startTime
 	if s.startTime == 0 {
 		s.startTime = currentTime
 		elapsed = 0
 	}
+	s.mu.Unlock()
 
 	intervalSec := def.Interval.Seconds()
 	if s.Speed > 0 {
@@ -70,7 +75,9 @@ func (s *Spinner) RenderConsole(c *console.Console, opts console.Options, curren
 
 // Reset resets the spinner animation to the beginning.
 func (s *Spinner) Reset() {
+	s.mu.Lock()
 	s.startTime = 0
+	s.mu.Unlock()
 }
 
 // FrameCount returns the number of frames in this spinner.

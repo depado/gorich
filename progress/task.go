@@ -181,45 +181,39 @@ func (t *Task) Snapshot() TaskSnapshot {
 }
 
 // speedLocked calculates speed from samples (must hold lock).
+// Speed is calculated as the rate of progress within the speed estimation window.
 func (t *Task) speedLocked(now float64) *float64 {
 	if t.samples.count < 2 {
 		return nil
 	}
 
-	oldest, _ := t.samples.oldest()
 	newest, _ := t.samples.newest()
-
-	// Filter samples within speed period
 	windowStart := now - t.speedPeriod
-	totalCompleted := 0.0
-	firstTimestamp := now
-	lastTimestamp := 0.0
 
+	// Find the oldest sample within the speed window
+	var oldestInWindow *progressSample
 	t.samples.iterate(func(s progressSample) {
 		if s.timestamp >= windowStart {
-			totalCompleted += s.completed
-			if s.timestamp < firstTimestamp {
-				firstTimestamp = s.timestamp
-			}
-			if s.timestamp > lastTimestamp {
-				lastTimestamp = s.timestamp
+			if oldestInWindow == nil || s.timestamp < oldestInWindow.timestamp {
+				sample := s // copy to avoid reference issues
+				oldestInWindow = &sample
 			}
 		}
 	})
 
-	// Use oldest sample's timestamp as the denominator base
-	if oldest.timestamp >= windowStart {
-		firstTimestamp = oldest.timestamp
+	// If no samples in window, use the global oldest
+	if oldestInWindow == nil {
+		oldest, _ := t.samples.oldest()
+		oldestInWindow = &oldest
 	}
 
-	elapsed := lastTimestamp - firstTimestamp
+	// Calculate speed = delta_completed / delta_time
+	elapsed := newest.timestamp - oldestInWindow.timestamp
 	if elapsed <= 0 {
 		return nil
 	}
 
-	// Speed = total steps / elapsed time
-	// We subtract the oldest sample's completed value since it's the baseline
-	speed := (newest.completed - oldest.completed) / elapsed
+	speed := (newest.completed - oldestInWindow.completed) / elapsed
 	if speed < 0 {
 		speed = 0
 	}

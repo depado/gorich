@@ -227,12 +227,20 @@ func (l *Live) refreshLoop(ctx context.Context) {
 }
 
 // ProcessRenderables implements console.RenderHook.
-// This intercepts all console.Print calls while Live is active.
+// This intercepts all console.Render calls while Live is active.
+//
+// Note: We read console properties BEFORE acquiring l.mu to avoid deadlock.
+// console.Render() holds c.mu when calling this method, so calling
+// l.console.IsTerminal() while holding l.mu would try to acquire c.mu again.
 func (l *Live) ProcessRenderables(renderables []console.Renderable) []console.Renderable {
+	// Read console properties before acquiring l.mu to avoid deadlock
+	// (caller console.Render already holds c.mu)
+	isTerminal := l.console.IsTerminal()
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if !l.console.IsTerminal() {
+	if !isTerminal {
 		return renderables
 	}
 

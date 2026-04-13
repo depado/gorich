@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/depado/gorich/internal/cells"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/style"
 )
@@ -223,7 +224,8 @@ func Strip(markup string) string {
 	return Parse(markup).Plain
 }
 
-// VisibleLength returns the length of the visible text (without markup tags).
+// VisibleLength returns the terminal cell width of the visible text (without markup tags).
+// This accounts for double-width characters (CJK), zero-width characters, etc.
 func VisibleLength(markup string) int {
-	return len(Strip(markup))
+	return cells.Len(Strip(markup))
 }

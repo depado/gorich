@@ -1,7 +1,10 @@
 // Package spinner provides animated spinner widgets.
 package spinner
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 // Definition describes a spinner animation.
 type Definition struct {
@@ -316,11 +319,12 @@ func Get(name string) Definition {
 	return Spinners[Default]
 }
 
-// Names returns all available spinner names.
+// Names returns all available spinner names in sorted order.
 func Names() []string {
 	names := make([]string, 0, len(Spinners))
 	for name := range Spinners {
 		names = append(names, name)
 	}
+	sort.Strings(names)
 	return names
 }

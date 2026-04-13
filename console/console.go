@@ -3,9 +3,11 @@ package console
 import (
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/depado/gorich/internal/cells"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/style"
 	"golang.org/x/term"
@@ -29,15 +31,16 @@ type RenderHook interface {
 
 // Console handles terminal output with colors and styles.
 type Console struct {
-	mu          sync.Mutex
-	out         io.Writer
-	colorSystem style.ColorSystem
-	width       int
-	height      int
-	isTerminal  bool
-	noColor     bool
+	mu            sync.Mutex
+	out           io.Writer
+	colorSystem   style.ColorSystem
+	width         int
+	height        int
+	isTerminal    bool
+	noColor       bool
 	forceTerminal *bool
-	hooks       []RenderHook
+	hooks         []RenderHook
+	environ       map[string]string // Custom environment for testing (like Rich's _environ)
 }
 
 // Option configures a Console.
@@ -75,6 +78,15 @@ func WithNoColor(noColor bool) Option {
 func WithWidth(width int) Option {
 	return func(c *Console) {
 		c.width = width
+	}
+}
+
+// WithEnviron sets a custom environment mapping for testing.
+// This allows overriding environment variables without modifying the actual environment.
+// Matches Python Rich's _environ parameter pattern.
+func WithEnviron(env map[string]string) Option {
+	return func(c *Console) {
+		c.environ = env
 	}
 }
 
@@ -117,17 +129,15 @@ func (c *Console) detectTerminal() {
 
 	// Fallback to environment variables
 	if c.width == 0 {
-		if cols := os.Getenv("COLUMNS"); cols != "" {
-			var w int
-			if _, err := parseEnvInt(cols); err == nil {
+		if cols := c.getEnv("COLUMNS"); cols != "" {
+			if w, err := parseEnvInt(cols); err == nil {
 				c.width = w
 			}
 		}
 	}
 	if c.height == 0 {
-		if lines := os.Getenv("LINES"); lines != "" {
-			var h int
-			if _, err := parseEnvInt(lines); err == nil {
+		if lines := c.getEnv("LINES"); lines != "" {
+			if h, err := parseEnvInt(lines); err == nil {
 				c.height = h
 			}
 		}
@@ -146,16 +156,25 @@ func (c *Console) detectTerminal() {
 		c.colorSystem = c.detectColorSystem()
 	}
 
-	// Check NO_COLOR environment variable
-	if os.Getenv("NO_COLOR") != "" {
+	// Check NO_COLOR environment variable (standard: https://no-color.org/)
+	if c.getEnv("NO_COLOR") != "" {
 		c.noColor = true
 	}
 }
 
 func parseEnvInt(s string) (int, error) {
-	var n int
-	_, err := strings.NewReader(s).Read([]byte{})
-	return n, err
+	return strconv.Atoi(s)
+}
+
+// getEnv returns the value of an environment variable, checking the custom
+// environ map first (if set), then falling back to os.Getenv.
+func (c *Console) getEnv(key string) string {
+	if c.environ != nil {
+		if v, ok := c.environ[key]; ok {
+			return v
+		}
+	}
+	return os.Getenv(key)
 }
 
 func (c *Console) detectColorSystem() style.ColorSystem {
@@ -164,13 +183,13 @@ func (c *Console) detectColorSystem() style.ColorSystem {
 	}
 
 	// Check COLORTERM for truecolor support
-	colorTerm := os.Getenv("COLORTERM")
+	colorTerm := c.getEnv("COLORTERM")
 	if colorTerm == "truecolor" || colorTerm == "24bit" {
 		return style.ColorSystemTrueColor
 	}
 
 	// Check TERM for color support
-	termEnv := os.Getenv("TERM")
+	termEnv := c.getEnv("TERM")
 	if strings.Contains(termEnv, "256color") {
 		return style.ColorSystem256
 	}
@@ -229,11 +248,15 @@ func (c *Console) ColorSystem() style.ColorSystem {
 func (c *Console) Options() Options {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	colorSys := c.colorSystem
+	if c.noColor {
+		colorSys = style.ColorSystemNone
+	}
 	return Options{
 		Size:        Dimensions{Width: c.width, Height: c.height},
 		MaxWidth:    c.width,
 		IsTerminal:  c.isTerminal,
-		ColorSystem: c.colorSystem,
+		ColorSystem: colorSys,
 	}
 }
 
@@ -258,42 +281,50 @@ func (c *Console) PopRenderHook() RenderHook {
 
 // Render renders a Renderable to the console.
 func (c *Console) Render(r Renderable) {
+	// Read all state we need while holding the lock
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
+	colorSys := c.colorSystem
+	if c.noColor {
+		colorSys = style.ColorSystemNone
+	}
 	opts := Options{
 		Size:        Dimensions{Width: c.width, Height: c.height},
 		MaxWidth:    c.width,
 		IsTerminal:  c.isTerminal,
-		ColorSystem: c.colorSystem,
+		ColorSystem: colorSys,
 	}
+	hooks := c.hooks // copy slice reference
+	out := c.out
+	c.mu.Unlock()
 
-	// Apply render hooks
+	// Apply render hooks WITHOUT holding the lock.
+	// This is critical: hooks like Live.ProcessRenderables may call back into
+	// Console methods (IsTerminal, Options, etc.) which would deadlock if we
+	// held the lock here.
 	renderables := []Renderable{r}
-	for _, hook := range c.hooks {
+	for _, hook := range hooks {
 		renderables = hook.ProcessRenderables(renderables)
 	}
 
-	// Render all renderables
+	// Render all renderables (also without lock - Render implementations may
+	// call Console methods)
 	var allSegments []segment.Segment
 	for _, renderable := range renderables {
 		segments := renderable.Render(c, opts)
 		allSegments = append(allSegments, segments...)
 	}
 
-	// Convert to ANSI string
-	colorSys := c.colorSystem
-	if c.noColor {
-		colorSys = style.ColorSystemNone
-	}
-
+	// Build output string
 	var output strings.Builder
 	for _, seg := range allSegments {
 		output.WriteString(seg.Render(colorSys))
 	}
 	output.WriteString("\n")
 
-	c.out.Write([]byte(output.String())) //nolint:errcheck // terminal output is fire-and-forget
+	// Write atomically (re-acquire lock for the write only)
+	c.mu.Lock()
+	out.Write([]byte(output.String())) //nolint:errcheck // terminal output is fire-and-forget
+	c.mu.Unlock()
 }
 
 // PrintSegments writes segments directly to the console.
@@ -361,11 +392,11 @@ func (t Text) Render(c *Console, opts Options) []segment.Segment {
 
 // Measure implements Measurable.
 func (t Text) Measure(c *Console, opts Options) Measurement {
-	// Simple measurement - count cells
+	// Measure cell width (accounts for double-width CJK chars, etc.)
 	lines := strings.Split(t.Content, "\n")
 	maxWidth := 0
 	for _, line := range lines {
-		w := len(line) // TODO: use cell width
+		w := cells.Len(line)
 		if w > maxWidth {
 			maxWidth = w
 		}

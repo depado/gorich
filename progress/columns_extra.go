@@ -2,6 +2,7 @@ package progress
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/depado/gorich/console"
@@ -16,7 +17,9 @@ type SpinnerColumn struct {
 	Style        *style.Style
 	FinishedText string
 	Speed        float64
+	mu           sync.Mutex // protects spinners and perTaskNames maps
 	spinners     map[TaskID]*spinner.Spinner
+	perTaskNames map[TaskID]string
 	maxRefresh   time.Duration
 }
 
@@ -27,11 +30,20 @@ func NewSpinnerColumn(opts ...func(*SpinnerColumn)) *SpinnerColumn {
 		FinishedText: "✓",
 		Speed:        1.0,
 		spinners:     make(map[TaskID]*spinner.Spinner),
+		perTaskNames: make(map[TaskID]string),
 	}
 	for _, opt := range opts {
 		opt(sc)
 	}
 	return sc
+}
+
+// SetTaskSpinner assigns a specific spinner name to a task, overriding the
+// column default. Must be called before the task's first render.
+func (sc *SpinnerColumn) SetTaskSpinner(id TaskID, name string) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	sc.perTaskNames[id] = name
 }
 
 // WithSpinnerName sets the spinner name.
@@ -65,10 +77,17 @@ func (sc *SpinnerColumn) Render(task TaskSnapshot, c *console.Console, opts cons
 		return []segment.Segment{segment.NewText(sc.FinishedText, &s)}
 	}
 
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+
 	// Get or create spinner for this task
 	spin, ok := sc.spinners[task.ID]
 	if !ok {
-		spin = spinner.New(sc.SpinnerName)
+		name := sc.SpinnerName
+		if perName, ok := sc.perTaskNames[task.ID]; ok {
+			name = perName
+		}
+		spin = spinner.New(name)
 		if sc.Style != nil {
 			spin = spin.WithStyle(*sc.Style)
 		}

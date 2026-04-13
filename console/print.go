@@ -3,9 +3,12 @@ package console
 import (
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/depado/gorich/internal/cells"
 	"github.com/depado/gorich/markup"
 	"github.com/depado/gorich/segment"
+	"github.com/depado/gorich/style"
 )
 
 // Print prints Rich-style markup to the console.
@@ -32,7 +35,7 @@ func (c *Console) Print(args ...any) {
 	// Convert to ANSI string
 	colorSys := c.colorSystem
 	if c.noColor {
-		colorSys = 0
+		colorSys = style.ColorSystemNone
 	}
 
 	var output strings.Builder
@@ -63,7 +66,7 @@ func (c *Console) PrintMarkup(text markup.Text) {
 
 	colorSys := c.colorSystem
 	if c.noColor {
-		colorSys = 0
+		colorSys = style.ColorSystemNone
 	}
 
 	var output strings.Builder
@@ -93,13 +96,12 @@ func (c *Console) Log(args ...any) {
 	// Convert to ANSI string
 	colorSys := c.colorSystem
 	if c.noColor {
-		colorSys = 0
+		colorSys = style.ColorSystemNone
 	}
 
 	var output strings.Builder
 
 	// Add timestamp in dim style
-	// TODO: add actual timestamp formatting
 	output.WriteString(segment.Segment{
 		Text:  "[" + currentTime() + "] ",
 		Style: nil, // Could add dim style here
@@ -114,8 +116,8 @@ func (c *Console) Log(args ...any) {
 }
 
 func currentTime() string {
-	// Simple time format - could be made configurable
-	return "LOG"
+	// Format like Python Rich: HH:MM:SS
+	return time.Now().Format("15:04:05")
 }
 
 // Rule prints a horizontal rule with optional title.
@@ -134,8 +136,8 @@ func (c *Console) Rule(title string) {
 		// Just a line
 		output.WriteString(strings.Repeat("─", width))
 	} else {
-		// Title centered in the rule
-		titleLen := len(title) + 2 // space on each side
+		// Title centered in the rule (use cell width for Unicode support)
+		titleLen := cells.Len(title) + 2 // space on each side
 		if titleLen >= width-4 {
 			output.WriteString(title)
 		} else {
