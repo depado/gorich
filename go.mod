@@ -3,7 +3,7 @@ module github.com/depado/gorich
 go 1.26.1
 
 require (
-	github.com/mattn/go-runewidth v0.0.23
+	github.com/mattn/go-runewidth v0.0.24
 	golang.org/x/term v0.43.0
 )
 
