@@ -47,16 +47,24 @@ func main() {
 
 	gorich.Rule("Printf")
 
-	// Printf style
+	// Printf style (no trailing newline, like standard printf)
 	gorich.Printf("[bold]Count:[/] %d", 42)
-	gorich.Printf("[green]Status:[/] %s", "OK")
-	gorich.Printf("[cyan]Progress:[/] %.1f%%", 75.5)
+	gorich.Printf(" - [green]done[/]\n")
+	gorich.Printf("[cyan]Progress:[/] %.1f%%\n", 75.5)
 
 	gorich.Rule("Escaped Markup")
 
 	// Escaped brackets
 	gorich.Print("Use \\[bold] to write literal brackets")
 	gorich.Print("Array syntax: arr\\[0] = value")
+
+	gorich.Rule("Styled Rules", console.WithRuleStyle("blue"))
+
+	// Styled rules
+	gorich.Rule("Blue Rule Line", console.WithRuleStyle("blue"))
+	gorich.Rule("Bold Red Title", console.WithTitleStyle("bold red"))
+	gorich.Rule("Both Styled", console.WithRuleStyle("dim"), console.WithTitleStyle("bold yellow"))
+	gorich.Rule("[green]Markup[/] in Title", console.WithRuleStyle("cyan"))
 
 	gorich.Rule("")
 }

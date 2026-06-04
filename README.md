@@ -24,7 +24,10 @@ go get github.com/depado/gorich
 ```go
 package main
 
-import "github.com/depado/gorich"
+import (
+    "github.com/depado/gorich"
+    "github.com/depado/gorich/console"
+)
 
 func main() {
     // Styled text with markup
@@ -36,11 +39,14 @@ func main() {
     gorich.Print("[#ff6600]Orange[/]")
     gorich.Print("[rgb(100,150,200)]Custom color[/]")
     
-    // Printf style
+    // Printf style (no trailing newline, like standard printf)
     gorich.Printf("[bold]Count:[/] %d", 42)
+    gorich.Printf(" - [green]done[/]\n")
     
-    // Horizontal rules
+    // Horizontal rules with optional styling
     gorich.Rule("Section Title")
+    gorich.Rule("Styled Rule", console.WithRuleStyle("blue"))
+    gorich.Rule("Styled Title", console.WithTitleStyle("bold red"))
 }
 ```
 
@@ -62,6 +68,28 @@ func main() {
 | `\\[text]` | Escaped brackets |
 
 *Italic support depends on your terminal and font. Many terminals don't support italic or require a font with italic glyphs.
+
+### Horizontal Rules
+
+```go
+// Simple rule
+gorich.Rule("Section Title")
+
+// Style the rule line
+gorich.Rule("Blue Line", console.WithRuleStyle("blue"))
+
+// Style the title
+gorich.Rule("Bold Title", console.WithTitleStyle("bold red"))
+
+// Style both
+gorich.Rule("Fancy", console.WithRuleStyle("dim"), console.WithTitleStyle("bold yellow"))
+
+// Markup in title (combined with title style)
+gorich.Rule("[green]Success[/]", console.WithRuleStyle("cyan"))
+
+// Empty rule (just a line)
+gorich.Rule("")
+```
 
 ## Progress Bars
 

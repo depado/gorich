@@ -44,8 +44,8 @@ func Log(args ...any) {
 }
 
 // Rule prints a horizontal rule with optional title.
-func Rule(title string) {
-	defaultConsole.Rule(title)
+func Rule(title string, opts ...console.RuleOption) {
+	defaultConsole.Rule(title, opts...)
 }
 
 // Console returns the default console for advanced usage.
