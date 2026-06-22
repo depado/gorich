@@ -278,7 +278,36 @@ func (t *Task) checkFinished(now float64) {
 		return // Not finished
 	}
 
-	// Record finish state
+	t.recordFinish(now)
+}
+
+// Done marks the task as finished, regardless of current progress.
+// If the task has a known total and hasn't reached it, completed is set to total.
+// An optional description can be passed to update the display text.
+func (t *Task) Done(description ...string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	if t.finishedTime != nil {
+		return
+	}
+
+	now := t.getTime()
+
+	if t.total != nil && t.completed < *t.total {
+		t.completed = *t.total
+		t.samples.push(progressSample{timestamp: now, completed: t.completed})
+	}
+
+	if len(description) > 0 {
+		t.description = description[0]
+	}
+
+	t.recordFinish(now)
+}
+
+// recordFinish captures the finished time and speed, releasing lock after.
+func (t *Task) recordFinish(now float64) {
 	if t.startTime != nil {
 		elapsed := now - *t.startTime - t.pausedTime
 		if t.pauseStartTime != nil {

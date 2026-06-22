@@ -229,6 +229,19 @@ total := 500.0
 p.Update(task, progress.TaskUpdateConfig{Total: &total})
 ```
 
+## Marking Tasks as Done
+
+Use `Done()` to explicitly mark a task as finished and optionally update its description:
+
+```go
+task := p.AddTask("Waiting for API...", nil)  // indeterminate task
+p.Done(task, "[green]Connected![/]")          // mark done + update description
+```
+
+`Done()` works on both indeterminate and determinate tasks. For determinate tasks
+that haven't reached 100%, it also sets completed to total for a proper visual
+finish (green bar, checkmark in spinner, etc.).
+
 ## Configuration Options
 
 ```go
@@ -361,6 +374,7 @@ defer p.Stop()
 taskID := p.AddTask(description, total, opts...)
 p.Advance(taskID, amount)
 p.Update(taskID, config)
+p.Done(taskID, description...)  // Mark task as finished
 p.RemoveTask(taskID)
 
 // Task timing

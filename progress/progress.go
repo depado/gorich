@@ -287,6 +287,20 @@ func (p *Progress) ResetTask(taskID TaskID, start bool) {
 	}
 }
 
+// Done marks a task as finished, regardless of its current progress.
+// This is useful for indeterminate tasks (total=nil) that need to be
+// explicitly marked complete, e.g. after an API call returns.
+// An optional description can be passed to update the display text.
+func (p *Progress) Done(taskID TaskID, description ...string) {
+	p.mu.Lock()
+	task, ok := p.tasks[taskID]
+	p.mu.Unlock()
+
+	if ok {
+		task.Done(description...)
+	}
+}
+
 // Refresh forces an immediate refresh.
 func (p *Progress) Refresh() {
 	p.mu.Lock()

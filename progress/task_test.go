@@ -226,6 +226,122 @@ func TestSampleRingOverflow(t *testing.T) {
 	}
 }
 
+func TestTaskDoneIndeterminate(t *testing.T) {
+	currentTime := 0.0
+	getTime := func() float64 { return currentTime }
+
+	task := NewTask(1, TaskConfig{
+		Description: "Waiting for API",
+		Total:       nil,
+		Start:       true,
+	}, getTime, 30.0)
+
+	currentTime = 5.0
+	task.Done()
+
+	snap := task.Snapshot()
+	if !snap.Finished {
+		t.Error("Task should be finished after Done()")
+	}
+	if snap.FinishedTime == nil {
+		t.Error("FinishedTime should be set")
+	}
+	if *snap.FinishedTime < 4.9 || *snap.FinishedTime > 5.1 {
+		t.Errorf("FinishedTime = %f, expected ~5", *snap.FinishedTime)
+	}
+}
+
+func TestTaskDoneDeterminate(t *testing.T) {
+	currentTime := 0.0
+	getTime := func() float64 { return currentTime }
+
+	total := 100.0
+	task := NewTask(1, TaskConfig{
+		Description: "Processing",
+		Total:       &total,
+		Start:       true,
+	}, getTime, 30.0)
+
+	currentTime = 1.0
+	task.Advance(30)
+
+	snap := task.Snapshot()
+	if snap.Completed != 30 {
+		t.Errorf("Completed = %f, want 30", snap.Completed)
+	}
+
+	currentTime = 3.0
+	task.Done()
+
+	snap = task.Snapshot()
+	if !snap.Finished {
+		t.Error("Task should be finished after Done()")
+	}
+	if snap.Completed != 100 {
+		t.Errorf("Completed = %f, want 100 after Done()", snap.Completed)
+	}
+	if snap.Percentage != 100 {
+		t.Errorf("Percentage = %f, want 100 after Done()", snap.Percentage)
+	}
+}
+
+func TestTaskDoneWithDescription(t *testing.T) {
+	currentTime := 0.0
+	getTime := func() float64 { return currentTime }
+
+	task := NewTask(1, TaskConfig{
+		Description: "Waiting...",
+		Total:       nil,
+		Start:       true,
+	}, getTime, 30.0)
+
+	currentTime = 2.0
+	task.Done("Connected!")
+
+	snap := task.Snapshot()
+	if !snap.Finished {
+		t.Error("Task should be finished after Done()")
+	}
+	if snap.Description != "Connected!" {
+		t.Errorf("Description = %q, want %q", snap.Description, "Connected!")
+	}
+}
+
+func TestTaskDoneAlreadyFinished(t *testing.T) {
+	currentTime := 0.0
+	getTime := func() float64 { return currentTime }
+
+	total := 10.0
+	task := NewTask(1, TaskConfig{
+		Description: "Done task",
+		Total:       &total,
+		Start:       true,
+	}, getTime, 30.0)
+
+	currentTime = 1.0
+	task.Advance(10)
+
+	snap := task.Snapshot()
+	if !snap.Finished {
+		t.Fatal("Task should be finished after Advance to total")
+	}
+	firstFinishedTime := *snap.FinishedTime
+
+	currentTime = 5.0
+	task.Done("Should not update")
+
+	snap = task.Snapshot()
+	if !snap.Finished {
+		t.Error("Task should still be finished")
+	}
+	if snap.Description != "Done task" {
+		t.Errorf("Description = %q, want %q", snap.Description, "Done task")
+	}
+	if *snap.FinishedTime != firstFinishedTime {
+		t.Error("FinishedTime should not change on second Done()")
+	}
+}
+
 func TestTaskFinishedTimeWithPause(t *testing.T) {
 	var clock = 1000.0
 	getTime := func() float64 { return clock }
