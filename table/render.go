@@ -26,12 +26,7 @@ func (t *Table) _getCells(c *console.Console, colIndex int, col *Column) []cellR
 			s = t.headerStyle
 		}
 		if col.HeaderStyle != nil {
-			if s != nil {
-				merged := s.Add(*col.HeaderStyle)
-				s = &merged
-			} else {
-				s = col.HeaderStyle
-			}
+			s = mergeStyles(s, col.HeaderStyle)
 		}
 		r := t.renderableFor(col.Header)
 		rawCells = append(rawCells, rawCell{s, r})
@@ -52,12 +47,7 @@ func (t *Table) _getCells(c *console.Console, colIndex int, col *Column) []cellR
 			s = t.footerStyle
 		}
 		if col.FooterStyle != nil {
-			if s != nil {
-				merged := s.Add(*col.FooterStyle)
-				s = &merged
-			} else {
-				s = col.FooterStyle
-			}
+			s = mergeStyles(s, col.FooterStyle)
 		}
 		r := t.renderableFor(col.Footer)
 		rawCells = append(rawCells, rawCell{s, r})
@@ -407,13 +397,8 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 				rowStyle = t.rowStyles[dataIdx%len(t.rowStyles)]
 			}
 			if dataIdx >= 0 && dataIdx < len(t.rows) && t.rows[dataIdx].Style != nil {
-				if rowStyle != nil {
-					merged := rowStyle.Add(*t.rows[dataIdx].Style)
-					rowStyle = &merged
-				} else {
-					rowStyle = t.rows[dataIdx].Style
-				}
-			}
+			rowStyle = mergeStyles(rowStyle, t.rows[dataIdx].Style)
+		}
 		}
 
 		maxHeight := 1
@@ -427,12 +412,7 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 
 			combinedStyle := cell.style
 			if rowStyle != nil {
-				if combinedStyle != nil {
-					merged := rowStyle.Add(*combinedStyle)
-					combinedStyle = &merged
-				} else {
-					combinedStyle = rowStyle
-				}
+				combinedStyle = mergeStyles(rowStyle, combinedStyle)
 			}
 
 			// Apply style to rendered lines
@@ -468,13 +448,8 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 			w := widths[ci]
 			bgStyle := rowStyle
 			if rowCell[ci].style != nil {
-				if bgStyle != nil {
-					merged := bgStyle.Add(*rowCell[ci].style)
-					bgStyle = &merged
-				} else {
-					bgStyle = rowCell[ci].style
-				}
-			}
+			bgStyle = mergeStyles(bgStyle, rowCell[ci].style)
+		}
 
 			aligned := alignVert(cellsLines[ci], vert, w, rowHeight, bgStyle)
 			shaped := setShape(aligned, w, maxHeight, bgStyle)
@@ -632,4 +607,15 @@ func ones(n int) []int {
 		r[i] = 1
 	}
 	return r
+}
+
+func mergeStyles(base, override *style.Style) *style.Style {
+	if override == nil {
+		return base
+	}
+	if base == nil {
+		return override
+	}
+	merged := base.Add(*override)
+	return &merged
 }

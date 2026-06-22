@@ -3,7 +3,6 @@ package spinner
 import (
 	"sync"
 
-	"github.com/depado/gorich/console"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/style"
 )
@@ -66,11 +65,6 @@ func (s *Spinner) Render(currentTime float64) []segment.Segment {
 	frame := def.Frames[frameIndex]
 
 	return []segment.Segment{segment.NewText(frame, s.Style)}
-}
-
-// RenderConsole implements console.Renderable.
-func (s *Spinner) RenderConsole(c *console.Console, opts console.Options, currentTime float64) []segment.Segment {
-	return s.Render(currentTime)
 }
 
 // Reset resets the spinner animation to the beginning.
