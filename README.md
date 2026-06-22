@@ -460,6 +460,29 @@ GoRich automatically detects terminal capabilities and uses the best available:
 - Standard 16 colors otherwise
 - No color when `NO_COLOR` is set or output is not a terminal
 
+### Predefined Styles
+
+Pre-defined style variables avoid the need to parse strings:
+
+```go
+// Attribute styles (use with `&style.Bold`, etc.)
+style.Bold      style.Dim       style.Italic
+style.Underline style.Blink     style.Reverse
+style.Strike    style.Conceal   style.Overline
+
+// Color styles
+style.Red     style.Green    style.Blue
+style.Yellow  style.Cyan     style.Magenta
+style.White   style.Black
+```
+
+Used with table/progress APIs that take `*style.Style`:
+
+```go
+table.WithHeaderStyle(&style.Bold)
+table.WithBorderStyle(&style.Cyan)
+```
+
 ### Progress Bar Colors
 
 The progress bar automatically changes color based on state:
