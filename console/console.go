@@ -327,6 +327,13 @@ func (c *Console) Render(r Renderable) {
 	c.mu.Unlock()
 }
 
+// RenderLines renders a Renderable into lines of segments.
+// This is used internally by table rendering to get cell content as lines.
+func (c *Console) RenderLines(r Renderable, opts Options) [][]segment.Segment {
+	segments := r.Render(c, opts)
+	return segment.SplitLines(segments)
+}
+
 // PrintSegments writes segments directly to the console.
 func (c *Console) PrintSegments(segments []segment.Segment) {
 	c.mu.Lock()
