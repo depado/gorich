@@ -526,7 +526,7 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 		}
 
 		if b != nil && (t.showLines || t.leading > 0 || endSection) {
-			if !last && !(t.showFooter && rowIdx >= len(rowCells)-2) && !(t.showHeader && headerRow) {
+			if !last && !(t.showFooter && rowIdx >= len(rowCells)-2 || t.showHeader && headerRow) {
 				if t.leading > 0 {
 					for l := 0; l < t.leading; l++ {
 						result = append(result, segment.NewText(b.GetRow(widths, "mid"), borderStyle))

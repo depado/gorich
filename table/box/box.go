@@ -445,15 +445,6 @@ var (
 	)
 )
 
-var legacyWindowsSubstitutions = map[*Box]*Box{
-	ROUNDED:            SQUARE,
-	MINIMAL_HEAVY_HEAD: MINIMAL,
-	SIMPLE_HEAVY:       SIMPLE,
-	HEAVY:              SQUARE,
-	HEAVY_EDGE:         SQUARE,
-	HEAVY_HEAD:         SQUARE,
-}
-
 var plainHeadedSubstitutions = map[*Box]*Box{
 	HEAVY_HEAD:           SQUARE,
 	SQUARE_DOUBLE_HEAD:   SQUARE,

@@ -227,7 +227,7 @@ func TestSampleRingOverflow(t *testing.T) {
 }
 
 func TestTaskFinishedTimeWithPause(t *testing.T) {
-	var clock float64 = 1000.0
+	var clock = 1000.0
 	getTime := func() float64 { return clock }
 
 	total := 10.0
