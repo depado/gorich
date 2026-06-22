@@ -102,25 +102,25 @@ func TestBarRenderPulse(t *testing.T) {
 		total     *float64
 		width     *int
 		pulse     bool
-		wantCount int
+		wantWidth int
 	}{
 		{
 			name:      "default width",
 			total:     nil,
-			wantCount: 40,
+			wantWidth: 40,
 		},
 		{
 			name:      "explicit width",
 			total:     nil,
 			width:     ptrInt(5),
-			wantCount: 5,
+			wantWidth: 5,
 		},
 		{
 			name:      "pulse forced",
 			total:     ptrFloat(100.0),
 			pulse:     true,
 			width:     ptrInt(8),
-			wantCount: 8,
+			wantWidth: 8,
 		},
 	}
 
@@ -137,21 +137,18 @@ func TestBarRenderPulse(t *testing.T) {
 				t.Fatal("expected non-nil segments")
 			}
 
-			if len(segs) != tt.wantCount {
-				t.Errorf("segment count = %d, want %d", len(segs), tt.wantCount)
+			if len(segs) < 1 {
+				t.Error("expected at least 1 segment")
 			}
 
 			totalLen := segment.TotalCellLength(segs)
-			if totalLen != tt.wantCount {
-				t.Errorf("TotalCellLength = %d, want %d", totalLen, tt.wantCount)
+			if totalLen != tt.wantWidth {
+				t.Errorf("TotalCellLength = %d, want %d", totalLen, tt.wantWidth)
 			}
 
 			for i, s := range segs {
 				if s.Style == nil {
 					t.Errorf("segment %d has nil style", i)
-				}
-				if s.Text != barFull {
-					t.Errorf("segment %d text = %q, want %q", i, s.Text, barFull)
 				}
 			}
 		})

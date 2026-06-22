@@ -153,45 +153,70 @@ func (pb *ProgressBar) renderDeterminate(c *console.Console, opts console.Option
 	return segments
 }
 
-func (pb *ProgressBar) renderPulse(c *console.Console, opts console.Options, width int) []segment.Segment {
-	// Pulse colors (gradient from background to highlight)
-	pulseStart := style.TrueColor(0, 0, 0)       // Dark
-	pulseEnd := style.TrueColor(128, 0, 255)     // Purple highlight
+const pulseBands = 5 // number of discrete gradient bands for pulse animation
 
-	// Calculate pulse offset based on animation time
+func (pb *ProgressBar) renderPulse(c *console.Console, opts console.Options, width int) []segment.Segment {
+	pulseStart := style.TrueColor(0, 0, 0)
+	pulseEnd := style.TrueColor(128, 0, 255)
+
 	offset := int(pb.AnimationTime * pulseSpeed) % (width + pulseSize)
 
-	var segments []segment.Segment
+	char := barFull
+	if pb.ASCIIOnly {
+		char = barFullASCII
+	}
 
+	factors := make([]float64, width)
 	for i := 0; i < width; i++ {
-		// Calculate distance from pulse center
 		pulseCenter := offset - pulseSize/2
 		dist := float64(i - pulseCenter)
 
-		// Use cosine for smooth gradient
-		var factor float64
 		if dist < -float64(pulseSize)/2 || dist > float64(pulseSize)/2 {
-			factor = 0
+			factors[i] = 0
 		} else {
-			factor = (math.Cos(dist*math.Pi/float64(pulseSize)) + 1) / 2
+			factors[i] = (math.Cos(dist*math.Pi/float64(pulseSize)) + 1) / 2
 		}
-
-		// Blend colors
-		color := pulseStart.Blend(pulseEnd, factor)
-		s := style.New().WithForeground(color)
-
-		char := barFull
-		if pb.ASCIIOnly {
-			char = barFullASCII
-		}
-
-		segments = append(segments, segment.Segment{
-			Text:  char,
-			Style: &s,
-		})
 	}
 
-	return segment.Simplify(segments)
+	var segments []segment.Segment
+	i := 0
+	for i < width {
+		band := int(factors[i]*float64(pulseBands-1) + 0.5)
+		if band < 0 {
+			band = 0
+		}
+		if band >= pulseBands {
+			band = pulseBands - 1
+		}
+
+		j := i + 1
+		for j < width {
+			nextBand := int(factors[j]*float64(pulseBands-1) + 0.5)
+			if nextBand < 0 {
+				nextBand = 0
+			}
+			if nextBand >= pulseBands {
+				nextBand = pulseBands - 1
+			}
+			if nextBand != band {
+				break
+			}
+			j++
+		}
+
+		count := j - i
+		factor := float64(band) / float64(pulseBands-1)
+		color := pulseStart.Blend(pulseEnd, factor)
+		s := style.New().WithForeground(color)
+		segments = append(segments, segment.Segment{
+			Text:  strings.Repeat(char, count),
+			Style: &s,
+		})
+
+		i = j
+	}
+
+	return segments
 }
 
 // Measure implements console.Measurable.
