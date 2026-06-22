@@ -2,6 +2,8 @@ package style
 
 import (
 	"strings"
+
+	"github.com/depado/gorich/internal/cells"
 )
 
 // Attribute represents a text attribute (bold, italic, etc.).
@@ -253,7 +255,7 @@ func (s Style) Render(text string, colorSystem ColorSystem) string {
 	// Hyperlink start
 	if s.link != "" {
 		result.WriteString("\x1b]8;;")
-		result.WriteString(sanitizeOSC(s.link))
+		result.WriteString(cells.SanitizeOSC(s.link))
 		result.WriteString("\x1b\\")
 	}
 
@@ -393,10 +395,4 @@ func (s Style) String() string {
 		return "none"
 	}
 	return strings.Join(parts, " ")
-}
-
-func sanitizeOSC(s string) string {
-	s = strings.ReplaceAll(s, "\x1b", "")
-	s = strings.ReplaceAll(s, "\x07", "")
-	return s
 }

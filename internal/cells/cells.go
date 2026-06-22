@@ -1,7 +1,10 @@
-// Package cells provides terminal cell width calculation for Unicode text.
 package cells
 
-import "github.com/mattn/go-runewidth"
+import (
+	"strings"
+
+	"github.com/mattn/go-runewidth"
+)
 
 // Len returns the number of terminal cells needed to display the string.
 // This accounts for double-width characters (CJK), zero-width characters,
@@ -34,4 +37,12 @@ func FillLeft(s string, width int) string {
 // Wrap wraps a string at the given cell width.
 func Wrap(s string, width int) string {
 	return runewidth.Wrap(s, width)
+}
+
+// SanitizeOSC removes ANSI escape characters and string terminators
+// from a string intended for embedding in an OSC escape sequence.
+func SanitizeOSC(s string) string {
+	s = strings.ReplaceAll(s, "\x1b", "")
+	s = strings.ReplaceAll(s, "\x07", "")
+	return s
 }
