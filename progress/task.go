@@ -68,20 +68,22 @@ func (r *sampleRing) iterate(fn func(progressSample)) {
 
 // Task represents a single progress task.
 type Task struct {
-	mu            sync.Mutex
-	id            TaskID
-	description   string
-	total         *float64 // nil = indeterminate
-	completed     float64
-	visible       bool
-	fields        map[string]any
-	startTime     *float64
-	stopTime      *float64
-	finishedTime  *float64 // Elapsed time when finished
-	finishedSpeed *float64 // Speed when finished
-	samples       sampleRing
-	getTime       func() float64
-	speedPeriod   float64 // Speed estimation window in seconds
+	mu             sync.Mutex
+	id             TaskID
+	description    string
+	total          *float64 // nil = indeterminate
+	completed      float64
+	visible        bool
+	fields         map[string]any
+	startTime      *float64
+	stopTime       *float64
+	finishedTime   *float64 // Elapsed time when finished
+	finishedSpeed  *float64 // Speed when finished
+	samples        sampleRing
+	getTime        func() float64
+	speedPeriod    float64 // Speed estimation window in seconds
+	pausedTime     float64 // cumulative time spent in paused state
+	pauseStartTime *float64 // when the current pause started, nil if not paused
 }
 
 // TaskConfig holds configuration for creating a task.
@@ -278,7 +280,10 @@ func (t *Task) checkFinished(now float64) {
 
 	// Record finish state
 	if t.startTime != nil {
-		elapsed := now - *t.startTime
+		elapsed := now - *t.startTime - t.pausedTime
+		if t.pauseStartTime != nil {
+			elapsed -= now - *t.pauseStartTime
+		}
 		t.finishedTime = &elapsed
 	}
 	t.finishedSpeed = t.speedLocked(now)
@@ -289,11 +294,22 @@ func (t *Task) Start() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	if t.startTime != nil {
-		return // Already started
+	if t.startTime != nil && t.stopTime == nil {
+		return // Already started and not paused
 	}
+
 	now := t.getTime()
-	t.startTime = &now
+	if t.startTime == nil {
+		t.startTime = &now
+		return
+	}
+
+	// Resuming from pause
+	if t.pauseStartTime != nil {
+		t.pausedTime += now - *t.pauseStartTime
+		t.pauseStartTime = nil
+	}
+	t.stopTime = nil
 }
 
 // Stop pauses timing the task.
@@ -306,6 +322,7 @@ func (t *Task) Stop() {
 	}
 	now := t.getTime()
 	t.stopTime = &now
+	t.pauseStartTime = &now
 }
 
 // Reset resets the task to initial state.
@@ -318,6 +335,8 @@ func (t *Task) Reset(start bool) {
 	t.stopTime = nil
 	t.finishedTime = nil
 	t.finishedSpeed = nil
+	t.pausedTime = 0
+	t.pauseStartTime = nil
 	t.samples.clear()
 
 	if start {

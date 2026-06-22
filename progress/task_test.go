@@ -225,3 +225,36 @@ func TestSampleRingOverflow(t *testing.T) {
 		t.Errorf("oldest.timestamp = %f after overflow, want 100", oldest.timestamp)
 	}
 }
+
+func TestTaskFinishedTimeWithPause(t *testing.T) {
+	var clock float64 = 1000.0
+	getTime := func() float64 { return clock }
+
+	total := 10.0
+	task := NewTask(0, TaskConfig{
+		Description: "test",
+		Total:       &total,
+		Start:       true,
+	}, getTime, 30.0)
+
+	clock = 1010.0 // 10 seconds elapsed
+	task.Advance(5)
+
+	task.Stop()
+
+	clock = 1110.0 // 100 seconds while paused
+
+	task.Start()
+
+	task.Advance(5)
+
+	snap := task.Snapshot()
+
+	if snap.FinishedTime == nil {
+		t.Fatal("expected finishedTime to be set")
+	}
+
+	if *snap.FinishedTime > 30 {
+		t.Errorf("finishedTime = %f, expected <= 30 (accounting for pause)", *snap.FinishedTime)
+	}
+}
