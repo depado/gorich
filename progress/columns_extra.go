@@ -13,14 +13,15 @@ import (
 
 // SpinnerColumn displays an animated spinner.
 type SpinnerColumn struct {
-	SpinnerName  string
-	Style        *style.Style
-	FinishedText string
-	Speed        float64
-	mu           sync.Mutex // protects spinners and perTaskNames maps
-	spinners     map[TaskID]*spinner.Spinner
-	perTaskNames map[TaskID]string
-	maxRefresh   time.Duration
+	SpinnerName   string
+	Style         *style.Style
+	FinishedText  string
+	FinishedStyle *style.Style
+	Speed         float64
+	mu            sync.Mutex
+	spinners      map[TaskID]*spinner.Spinner
+	perTaskNames  map[TaskID]string
+	maxRefresh    time.Duration
 }
 
 // NewSpinnerColumn creates a new spinner column.
@@ -71,7 +72,9 @@ func WithFinishedText(text string) func(*SpinnerColumn) {
 func (sc *SpinnerColumn) Render(task TaskSnapshot, c *console.Console, opts console.Options) []segment.Segment {
 	if task.Finished {
 		s := styleGreen
-		if sc.Style != nil {
+		if sc.FinishedStyle != nil {
+			s = *sc.FinishedStyle
+		} else if sc.Style != nil {
 			s = *sc.Style
 		}
 		return []segment.Segment{segment.NewText(sc.FinishedText, &s)}
@@ -106,6 +109,7 @@ func (sc *SpinnerColumn) MaxRefresh() time.Duration {
 // DownloadColumn displays download progress in bytes.
 type DownloadColumn struct {
 	BinaryUnits bool // Use KiB/MiB/GiB instead of KB/MB/GB
+	Style       *style.Style
 	maxRefresh  time.Duration
 }
 
@@ -126,7 +130,11 @@ func (dc *DownloadColumn) Render(task TaskSnapshot, c *console.Console, opts con
 		text = completed
 	}
 
-	return []segment.Segment{segment.NewText(text, &styleGreen)}
+	s := &styleGreen
+	if dc.Style != nil {
+		s = dc.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.
@@ -137,6 +145,7 @@ func (dc *DownloadColumn) MaxRefresh() time.Duration {
 // TransferSpeedColumn displays transfer speed in bytes/second.
 type TransferSpeedColumn struct {
 	BinaryUnits bool
+	Style       *style.Style
 	maxRefresh  time.Duration
 }
 
@@ -156,7 +165,11 @@ func (tsc *TransferSpeedColumn) Render(task TaskSnapshot, c *console.Console, op
 		text = "---"
 	}
 
-	return []segment.Segment{segment.NewText(text, &styleRed)}
+	s := &styleRed
+	if tsc.Style != nil {
+		s = tsc.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.
@@ -167,6 +180,7 @@ func (tsc *TransferSpeedColumn) MaxRefresh() time.Duration {
 // FileSizeColumn displays the completed amount as a file size.
 type FileSizeColumn struct {
 	BinaryUnits bool
+	Style       *style.Style
 	maxRefresh  time.Duration
 }
 
@@ -178,7 +192,11 @@ func NewFileSizeColumn(binaryUnits bool) *FileSizeColumn {
 // Render implements Column.
 func (fsc *FileSizeColumn) Render(task TaskSnapshot, c *console.Console, opts console.Options) []segment.Segment {
 	text := formatFileSize(task.Completed, fsc.BinaryUnits)
-	return []segment.Segment{segment.NewText(text, &styleGreen)}
+	s := &styleGreen
+	if fsc.Style != nil {
+		s = fsc.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.
@@ -189,6 +207,7 @@ func (fsc *FileSizeColumn) MaxRefresh() time.Duration {
 // TotalFileSizeColumn displays the total as a file size.
 type TotalFileSizeColumn struct {
 	BinaryUnits bool
+	Style       *style.Style
 	maxRefresh  time.Duration
 }
 
@@ -205,7 +224,11 @@ func (tfsc *TotalFileSizeColumn) Render(task TaskSnapshot, c *console.Console, o
 	} else {
 		text = "?"
 	}
-	return []segment.Segment{segment.NewText(text, &styleGreen)}
+	s := &styleGreen
+	if tfsc.Style != nil {
+		s = tfsc.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.

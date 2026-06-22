@@ -225,8 +225,9 @@ func (bc *BarColumn) MaxRefresh() time.Duration {
 
 // TaskProgressColumn displays the progress percentage or speed.
 type TaskProgressColumn struct {
-	ShowSpeed    bool // Show speed when total is unknown
-	maxRefresh   time.Duration
+	ShowSpeed  bool // Show speed when total is unknown
+	Style      *style.Style
+	maxRefresh time.Duration
 }
 
 // NewTaskProgressColumn creates a new task progress column.
@@ -251,7 +252,11 @@ func (tpc *TaskProgressColumn) Render(task TaskSnapshot, c *console.Console, opt
 		text = "---"
 	}
 
-	return []segment.Segment{segment.NewText(text, &styleMagenta)}
+	s := &styleMagenta
+	if tpc.Style != nil {
+		s = tpc.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.
@@ -261,8 +266,9 @@ func (tpc *TaskProgressColumn) MaxRefresh() time.Duration {
 
 // TimeRemainingColumn displays the estimated time remaining.
 type TimeRemainingColumn struct {
-	Compact            bool    // Use compact format (MM:SS)
-	ElapsedWhenFinished bool   // Show elapsed time when finished
+	Compact            bool   // Use compact format (MM:SS)
+	ElapsedWhenFinished bool  // Show elapsed time when finished
+	Style              *style.Style
 	maxRefresh         time.Duration
 }
 
@@ -288,7 +294,11 @@ func (trc *TimeRemainingColumn) Render(task TaskSnapshot, c *console.Console, op
 		}
 	}
 
-	return []segment.Segment{segment.NewText(text, &styleCyan)}
+	s := &styleCyan
+	if trc.Style != nil {
+		s = trc.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.
@@ -299,6 +309,7 @@ func (trc *TimeRemainingColumn) MaxRefresh() time.Duration {
 // TimeElapsedColumn displays the elapsed time.
 type TimeElapsedColumn struct {
 	Compact    bool
+	Style      *style.Style
 	maxRefresh time.Duration
 }
 
@@ -320,7 +331,11 @@ func (tec *TimeElapsedColumn) Render(task TaskSnapshot, c *console.Console, opts
 		}
 	}
 
-	return []segment.Segment{segment.NewText(text, &styleCyan)}
+	s := &styleCyan
+	if tec.Style != nil {
+		s = tec.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.
@@ -331,6 +346,7 @@ func (tec *TimeElapsedColumn) MaxRefresh() time.Duration {
 // MofNCompleteColumn displays "M/N" progress.
 type MofNCompleteColumn struct {
 	Separator  string
+	Style      *style.Style
 	maxRefresh time.Duration
 }
 
@@ -355,7 +371,11 @@ func (mc *MofNCompleteColumn) Render(task TaskSnapshot, c *console.Console, opts
 		text = fmt.Sprintf("%.0f", task.Completed)
 	}
 
-	return []segment.Segment{segment.NewText(text, &styleGreen)}
+	s := &styleGreen
+	if mc.Style != nil {
+		s = mc.Style
+	}
+	return []segment.Segment{segment.NewText(text, s)}
 }
 
 // MaxRefresh implements Column.
