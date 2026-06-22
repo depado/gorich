@@ -5,14 +5,14 @@
 GoRich is a Go port of Python's [Rich](https://github.com/Textualize/rich) library for beautiful terminal output. It provides:
 - **Rich Print** - Styled text with `[bold red]markup[/]` syntax
 - **Progress Bars** - Flicker-free, customizable progress displays with multiple concurrent tasks, speed estimation, and various column types
-- **Tables** - Bordered tables with column styling, alignment, markup cells, row styles, footers, sections, and 16 box styles
+- **Tables** - Bordered tables with column styling, alignment, markup cells, row styles, footers, sections, and 19 box styles
 
 ## Architecture
 
 The project follows a layered architecture mirroring Rich's design:
 
 ```
-gorich/       <- Package-level convenience (Print, Printf, Rule, NewTable)
+gorich/       <- Package-level convenience (Print, Printf, Log, Rule, MarkupRenderable)
         ↓
 markup/       <- Rich-style markup parser
   ├── Parse("[bold red]text[/]") -> Text
@@ -165,7 +165,7 @@ When `padEdge=false`:
   - Column options: `WithColumnStyle(s)`, `WithColumnHeaderStyle(s)`, `WithColumnFooterStyle(s)`, `WithColumnJustify(j)`, `WithColumnVertical(v)`, `WithColumnWidth(w)`, `WithColumnMinWidth(w)`, `WithColumnMaxWidth(w)`, `WithColumnRatio(r)`, `WithColumnNoWrap()`, `WithColumnOverflow(o)`
 - `Row` - Per-row metadata: `Style`, `EndSection`
 - `cellRender` (internal) - Pairs a renderable with display style + vertical alignment
-- `markupRenderable` (internal) - Wraps a string, renders through markup parser, implements `console.Measurable`
+- `MarkupRenderable` - Wraps a string, renders through markup parser, implements `console.Measurable` (public: `gorich.NewMarkupRenderable`)
 
 **Column width calculation** (`render.go`):
 - `_measureColumn()` - Measures a column's min/max width from all padded cells
