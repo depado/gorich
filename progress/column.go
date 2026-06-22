@@ -10,6 +10,13 @@ import (
 	"github.com/depado/gorich/style"
 )
 
+var (
+	styleMagenta = style.Parse("magenta")
+	styleCyan    = style.Parse("cyan")
+	styleGreen   = style.Parse("green")
+	styleRed     = style.Parse("red")
+)
+
 // Column is the interface for progress bar columns.
 type Column interface {
 	// Render renders the column for the given task.
@@ -244,8 +251,7 @@ func (tpc *TaskProgressColumn) Render(task TaskSnapshot, c *console.Console, opt
 		text = "---"
 	}
 
-	s := style.Parse("magenta")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleMagenta)}
 }
 
 // MaxRefresh implements Column.
@@ -282,8 +288,7 @@ func (trc *TimeRemainingColumn) Render(task TaskSnapshot, c *console.Console, op
 		}
 	}
 
-	s := style.Parse("cyan")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleCyan)}
 }
 
 // MaxRefresh implements Column.
@@ -315,8 +320,7 @@ func (tec *TimeElapsedColumn) Render(task TaskSnapshot, c *console.Console, opts
 		}
 	}
 
-	s := style.Parse("cyan")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleCyan)}
 }
 
 // MaxRefresh implements Column.
@@ -351,8 +355,7 @@ func (mc *MofNCompleteColumn) Render(task TaskSnapshot, c *console.Console, opts
 		text = fmt.Sprintf("%.0f", task.Completed)
 	}
 
-	s := style.Parse("green")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleGreen)}
 }
 
 // MaxRefresh implements Column.

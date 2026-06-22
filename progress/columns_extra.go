@@ -70,7 +70,7 @@ func WithFinishedText(text string) func(*SpinnerColumn) {
 // Render implements Column.
 func (sc *SpinnerColumn) Render(task TaskSnapshot, c *console.Console, opts console.Options) []segment.Segment {
 	if task.Finished {
-		s := style.Parse("green")
+		s := styleGreen
 		if sc.Style != nil {
 			s = *sc.Style
 		}
@@ -126,8 +126,7 @@ func (dc *DownloadColumn) Render(task TaskSnapshot, c *console.Console, opts con
 		text = completed
 	}
 
-	s := style.Parse("green")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleGreen)}
 }
 
 // MaxRefresh implements Column.
@@ -157,8 +156,7 @@ func (tsc *TransferSpeedColumn) Render(task TaskSnapshot, c *console.Console, op
 		text = "---"
 	}
 
-	s := style.Parse("red")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleRed)}
 }
 
 // MaxRefresh implements Column.
@@ -180,8 +178,7 @@ func NewFileSizeColumn(binaryUnits bool) *FileSizeColumn {
 // Render implements Column.
 func (fsc *FileSizeColumn) Render(task TaskSnapshot, c *console.Console, opts console.Options) []segment.Segment {
 	text := formatFileSize(task.Completed, fsc.BinaryUnits)
-	s := style.Parse("green")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleGreen)}
 }
 
 // MaxRefresh implements Column.
@@ -208,8 +205,7 @@ func (tfsc *TotalFileSizeColumn) Render(task TaskSnapshot, c *console.Console, o
 	} else {
 		text = "?"
 	}
-	s := style.Parse("green")
-	return []segment.Segment{segment.NewText(text, &s)}
+	return []segment.Segment{segment.NewText(text, &styleGreen)}
 }
 
 // MaxRefresh implements Column.
