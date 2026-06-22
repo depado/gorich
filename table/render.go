@@ -1,6 +1,7 @@
 package table
 
 import (
+	"github.com/depado/gorich"
 	"github.com/depado/gorich/console"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/style"
@@ -84,7 +85,7 @@ func (t *Table) renderableFor(s string) console.Renderable {
 	if s == "" {
 		return console.NewText("", nil)
 	}
-	return &markupRenderable{content: s}
+	return gorich.NewMarkupRenderable(s)
 }
 
 func (t *Table) cellPadding(firstCol, lastCol, firstRow, lastRow bool) (int, int, int, int) {

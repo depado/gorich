@@ -2,6 +2,7 @@ package gorich
 
 import (
 	"github.com/depado/gorich/console"
+	"github.com/depado/gorich/internal/cells"
 	"github.com/depado/gorich/markup"
 	"github.com/depado/gorich/segment"
 )
@@ -10,7 +11,9 @@ import (
 // Rich-style markup on render. It implements both console.Renderable
 // and console.Measurable.
 type MarkupRenderable struct {
-	content string
+	content   string
+	parsed    *markup.Text
+	parsedStr string
 }
 
 // NewMarkupRenderable creates a MarkupRenderable from a markup string.
@@ -18,14 +21,24 @@ func NewMarkupRenderable(content string) *MarkupRenderable {
 	return &MarkupRenderable{content: content}
 }
 
+func (mr *MarkupRenderable) getParsed() markup.Text {
+	if mr.parsed != nil && mr.parsedStr == mr.content {
+		return *mr.parsed
+	}
+	t := markup.Parse(mr.content)
+	mr.parsed = &t
+	mr.parsedStr = mr.content
+	return t
+}
+
 // Render implements console.Renderable.
 func (mr *MarkupRenderable) Render(c *console.Console, opts console.Options) []segment.Segment {
-	return markup.Render(mr.content)
+	return mr.getParsed().Render()
 }
 
 // Measure implements console.Measurable.
 func (mr *MarkupRenderable) Measure(c *console.Console, opts console.Options) console.Measurement {
-	w := markup.VisibleLength(mr.content)
+	w := cells.Len(mr.getParsed().Plain)
 	return console.NewMeasurement(w, w)
 }
 

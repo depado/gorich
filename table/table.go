@@ -3,8 +3,8 @@ package table
 import (
 	"fmt"
 
+	"github.com/depado/gorich"
 	"github.com/depado/gorich/console"
-	"github.com/depado/gorich/internal/cells"
 	"github.com/depado/gorich/markup"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/style"
@@ -245,56 +245,12 @@ func (t *Table) toRenderable(v interface{}) console.Renderable {
 	}
 	switch val := v.(type) {
 	case string:
-		return &markupRenderable{content: val}
+		return gorich.NewMarkupRenderable(val)
 	case console.Renderable:
 		return val
 	default:
-		return &markupRenderable{content: fmt.Sprint(val)}
+		return gorich.NewMarkupRenderable(fmt.Sprint(val))
 	}
-}
-
-// markupRenderable stores a string and renders it through the markup parser.
-type markupRenderable struct {
-	content   interface{}
-	parsed    *markup.Text
-	parsedStr string
-}
-
-func (mr *markupRenderable) getParsed() markup.Text {
-	s, ok := mr.content.(string)
-	if !ok {
-		return markup.Text{}
-	}
-	if mr.parsed != nil && mr.parsedStr == s {
-		return *mr.parsed
-	}
-	t := markup.Parse(s)
-	mr.parsed = &t
-	mr.parsedStr = s
-	return t
-}
-
-func (mr *markupRenderable) Render(c *console.Console, opts console.Options) []segment.Segment {
-	t := mr.getParsed()
-	if t.Plain == "" && len(t.Spans) == 0 {
-		_, ok := mr.content.(string)
-		if !ok {
-			return []segment.Segment{segment.NewText("\n", nil)}
-		}
-	}
-	return t.Render()
-}
-
-func (mr *markupRenderable) Measure(c *console.Console, opts console.Options) console.Measurement {
-	t := mr.getParsed()
-	if t.Plain == "" && len(t.Spans) == 0 {
-		_, ok := mr.content.(string)
-		if !ok {
-			return console.NewMeasurement(0, 0)
-		}
-	}
-	w := cells.Len(t.Plain)
-	return console.NewMeasurement(w, w)
 }
 
 // Render implements console.Renderable.
