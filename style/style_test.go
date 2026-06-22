@@ -1,6 +1,7 @@
 package style
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -157,5 +158,16 @@ func TestStyleRender(t *testing.T) {
 				t.Errorf("Render() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestStyleRenderLinkSanitization(t *testing.T) {
+	s := New().WithLink("https://evil.com/\x07injected/more")
+	result := s.Render("test", ColorSystemStandard)
+	if strings.Contains(result, "\x07") {
+		t.Error("link sanitization failed: BEL character not stripped from URL")
+	}
+	if !strings.Contains(result, "https://evil.com/") {
+		t.Errorf("link sanitization stripped too much: safe URL parts missing from %q", result)
 	}
 }

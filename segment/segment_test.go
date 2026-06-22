@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/depado/gorich/style"
@@ -130,5 +131,16 @@ func TestControlRender(t *testing.T) {
 				t.Errorf("Render() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestControlCodeSanitization(t *testing.T) {
+	cc := ControlCode{Type: ControlSetTitle, Text: "safe\x07injected"}
+	result := cc.Render()
+	if strings.Contains(result, "\x07") {
+		t.Error("OSC sanitization failed: BEL terminator not stripped")
+	}
+	if !strings.Contains(result, "safe") {
+		t.Error("OSC sanitization stripped too much: safe text missing")
 	}
 }

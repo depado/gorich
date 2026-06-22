@@ -205,8 +205,14 @@ func (cc ControlCode) Render() string {
 		}
 		return fmt.Sprintf("%s%dJ", csi, mode)
 	case ControlSetTitle, ControlSetWindowTitle:
-		return fmt.Sprintf("%s2;%s%s", osc, cc.Text, st)
+		return fmt.Sprintf("%s2;%s%s", osc, sanitizeOSC(cc.Text), st)
 	default:
 		return ""
 	}
+}
+
+func sanitizeOSC(s string) string {
+	s = strings.ReplaceAll(s, "\x1b", "")
+	s = strings.ReplaceAll(s, "\x07", "")
+	return s
 }
