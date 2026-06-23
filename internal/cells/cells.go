@@ -44,5 +44,7 @@ func Wrap(s string, width int) string {
 func SanitizeOSC(s string) string {
 	s = strings.ReplaceAll(s, "\x1b", "")
 	s = strings.ReplaceAll(s, "\x07", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	s = strings.ReplaceAll(s, "\r", "")
 	return s
 }
