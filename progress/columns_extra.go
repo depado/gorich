@@ -79,7 +79,7 @@ func WithFinishedText(text string) func(*SpinnerColumn) {
 // Render implements Column.
 func (sc *SpinnerColumn) Render(task TaskSnapshot, c *console.Console, opts console.Options) []segment.Segment {
 	if task.Finished {
-		s := styleGreen
+		s := style.Green
 		if sc.FinishedStyle != nil {
 			s = *sc.FinishedStyle
 		} else if sc.Style != nil {
@@ -138,7 +138,7 @@ func (dc *DownloadColumn) Render(task TaskSnapshot, c *console.Console, opts con
 		text = completed
 	}
 
-	s := resolveStyle(&styleGreen, dc.Style)
+	s := resolveStyle(&style.Green, dc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -170,7 +170,7 @@ func (tsc *TransferSpeedColumn) Render(task TaskSnapshot, c *console.Console, op
 		text = "---"
 	}
 
-	s := resolveStyle(&styleRed, tsc.Style)
+	s := resolveStyle(&style.Red, tsc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -194,7 +194,7 @@ func NewFileSizeColumn(binaryUnits bool) *FileSizeColumn {
 // Render implements Column.
 func (fsc *FileSizeColumn) Render(task TaskSnapshot, c *console.Console, opts console.Options) []segment.Segment {
 	text := formatFileSize(task.Completed, fsc.BinaryUnits)
-	s := resolveStyle(&styleGreen, fsc.Style)
+	s := resolveStyle(&style.Green, fsc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -223,7 +223,7 @@ func (tfsc *TotalFileSizeColumn) Render(task TaskSnapshot, c *console.Console, o
 	} else {
 		text = "?"
 	}
-	s := resolveStyle(&styleGreen, tfsc.Style)
+	s := resolveStyle(&style.Green, tfsc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 

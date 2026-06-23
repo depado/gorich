@@ -10,12 +10,6 @@ import (
 	"github.com/depado/gorich/style"
 )
 
-var (
-	styleMagenta = style.Parse("magenta")
-	styleCyan    = style.Parse("cyan")
-	styleGreen   = style.Parse("green")
-	styleRed     = style.Parse("red")
-)
 
 func resolveStyle(defaultStyle *style.Style, override *style.Style) *style.Style {
 	if override != nil {
@@ -259,7 +253,7 @@ func (tpc *TaskProgressColumn) Render(task TaskSnapshot, c *console.Console, opt
 		text = "---"
 	}
 
-	s := resolveStyle(&styleMagenta, tpc.Style)
+	s := resolveStyle(&style.Magenta, tpc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -298,7 +292,7 @@ func (trc *TimeRemainingColumn) Render(task TaskSnapshot, c *console.Console, op
 		}
 	}
 
-	s := resolveStyle(&styleCyan, trc.Style)
+	s := resolveStyle(&style.Cyan, trc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -332,7 +326,7 @@ func (tec *TimeElapsedColumn) Render(task TaskSnapshot, c *console.Console, opts
 		}
 	}
 
-	s := resolveStyle(&styleCyan, tec.Style)
+	s := resolveStyle(&style.Cyan, tec.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -369,7 +363,7 @@ func (mc *MofNCompleteColumn) Render(task TaskSnapshot, c *console.Console, opts
 		text = fmt.Sprintf("%.0f", task.Completed)
 	}
 
-	s := resolveStyle(&styleGreen, mc.Style)
+	s := resolveStyle(&style.Green, mc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
