@@ -1,6 +1,7 @@
 package box
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/depado/gorich/console"
@@ -60,6 +61,12 @@ func NewBox(raw string, ascii bool) *Box {
 	lines := strings.Split(strings.TrimSuffix(raw, "\n"), "\n")
 	if len(lines) != 8 {
 		panic("box: expected exactly 8 lines")
+	}
+
+	for i, line := range lines {
+		if len([]rune(line)) < 4 {
+			panic(fmt.Sprintf("box: line %d has fewer than 4 characters: %q", i+1, line))
+		}
 	}
 
 	b := &Box{raw: raw, ascii: ascii}

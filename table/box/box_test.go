@@ -1,6 +1,7 @@
 package box
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -264,4 +265,19 @@ func TestAllPredefinedBoxes(t *testing.T) {
 		_ = b.GetRow(w, "foot")
 		_ = b.GetBottom(w)
 	}
+}
+
+func TestNewBoxShortLines(t *testing.T) {
+	raw := "abc\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd\nabcd"
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic on short box line")
+		} else {
+			s := fmt.Sprint(r)
+			if !strings.Contains(s, "fewer than 4") {
+				t.Errorf("expected 'fewer than 4' in panic message, got %q", s)
+			}
+		}
+	}()
+	_ = NewBox(raw, true)
 }
