@@ -70,7 +70,7 @@ func (t *Table) _getCells(c *console.Console, colIndex int, col *Column) []cellR
 
 		r := rc.renderable
 		if anyPad {
-			top, right, bottom, left := t.cellPadding(firstCol, lastCol, firstRow, lastRow)
+			top, right, bottom, left := t.computePadding(firstCol, lastCol, firstRow, lastRow)
 			r = padding.NewPadding(r, []int{top, right, bottom, left}, nil, false)
 		}
 
@@ -90,7 +90,7 @@ func (t *Table) renderableFor(s string) console.Renderable {
 	return gorich.NewMarkupRenderable(s)
 }
 
-func (t *Table) cellPadding(firstCol, lastCol, firstRow, lastRow bool) (int, int, int, int) {
+func (t *Table) computePadding(firstCol, lastCol, firstRow, lastRow bool) (int, int, int, int) {
 	top, right, bottom, left := t.padTop, t.padRight, t.padBottom, t.padLeft
 
 	if t.collapsePadding {
