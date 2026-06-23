@@ -17,6 +17,13 @@ var (
 	styleRed     = style.Parse("red")
 )
 
+func resolveStyle(defaultStyle *style.Style, override *style.Style) *style.Style {
+	if override != nil {
+		return override
+	}
+	return defaultStyle
+}
+
 // Column is the interface for progress bar columns.
 type Column interface {
 	// Render renders the column for the given task.
@@ -252,10 +259,7 @@ func (tpc *TaskProgressColumn) Render(task TaskSnapshot, c *console.Console, opt
 		text = "---"
 	}
 
-	s := &styleMagenta
-	if tpc.Style != nil {
-		s = tpc.Style
-	}
+	s := resolveStyle(&styleMagenta, tpc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -294,10 +298,7 @@ func (trc *TimeRemainingColumn) Render(task TaskSnapshot, c *console.Console, op
 		}
 	}
 
-	s := &styleCyan
-	if trc.Style != nil {
-		s = trc.Style
-	}
+	s := resolveStyle(&styleCyan, trc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -331,10 +332,7 @@ func (tec *TimeElapsedColumn) Render(task TaskSnapshot, c *console.Console, opts
 		}
 	}
 
-	s := &styleCyan
-	if tec.Style != nil {
-		s = tec.Style
-	}
+	s := resolveStyle(&styleCyan, tec.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
@@ -371,10 +369,7 @@ func (mc *MofNCompleteColumn) Render(task TaskSnapshot, c *console.Console, opts
 		text = fmt.Sprintf("%.0f", task.Completed)
 	}
 
-	s := &styleGreen
-	if mc.Style != nil {
-		s = mc.Style
-	}
+	s := resolveStyle(&styleGreen, mc.Style)
 	return []segment.Segment{segment.NewText(text, s)}
 }
 
