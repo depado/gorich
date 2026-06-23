@@ -319,7 +319,6 @@ func (c *Console) Render(r Renderable) {
 	for _, seg := range allSegments {
 		output.WriteString(seg.Render(colorSys))
 	}
-	output.WriteString("\n")
 
 	// Write atomically (re-acquire lock for the write only)
 	c.mu.Lock()

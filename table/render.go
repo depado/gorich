@@ -1,6 +1,8 @@
 package table
 
 import (
+	"strings"
+
 	"github.com/depado/gorich"
 	"github.com/depado/gorich/console"
 	"github.com/depado/gorich/segment"
@@ -366,8 +368,11 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 
 	// Top border
 	if b != nil && t.showEdge {
-		result = append(result, segment.NewText(b.GetTop(widths), borderStyle))
-		result = append(result, nl)
+		topStr := b.GetTop(widths)
+		if strings.TrimSpace(topStr) != "" {
+			result = append(result, segment.NewText(topStr, borderStyle))
+			result = append(result, nl)
+		}
 	}
 
 	// Build row-oriented cell list
@@ -460,8 +465,11 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 		// Emit row lines
 		if b != nil {
 			if last && t.showFooter {
-				result = append(result, segment.NewText(b.GetRow(widths, "foot"), borderStyle))
-				result = append(result, nl)
+				footStr := b.GetRow(widths, "foot")
+				if strings.TrimSpace(footStr) != "" {
+					result = append(result, segment.NewText(footStr, borderStyle))
+					result = append(result, nl)
+				}
 			}
 
 			var partsIdx int
@@ -509,8 +517,11 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 
 		// Header divider
 		if b != nil && first && t.showHeader {
-			result = append(result, segment.NewText(b.GetRow(widths, "head"), borderStyle))
-			result = append(result, nl)
+			headStr := b.GetRow(widths, "head")
+			if strings.TrimSpace(headStr) != "" {
+				result = append(result, segment.NewText(headStr, borderStyle))
+				result = append(result, nl)
+			}
 		}
 
 		// Row dividers
@@ -529,12 +540,18 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 			if !last && (!t.showFooter || rowIdx < len(rowCells)-2) && (!t.showHeader || !headerRow) {
 				if t.leading > 0 {
 					for l := 0; l < t.leading; l++ {
-						result = append(result, segment.NewText(b.GetRow(widths, "mid"), borderStyle))
-						result = append(result, nl)
+						midStr := b.GetRow(widths, "mid")
+						if strings.TrimSpace(midStr) != "" {
+							result = append(result, segment.NewText(midStr, borderStyle))
+							result = append(result, nl)
+						}
 					}
 				} else {
-					result = append(result, segment.NewText(b.GetRow(widths, "row"), borderStyle))
-					result = append(result, nl)
+					rowStr := b.GetRow(widths, "row")
+					if strings.TrimSpace(rowStr) != "" {
+						result = append(result, segment.NewText(rowStr, borderStyle))
+						result = append(result, nl)
+					}
 				}
 			}
 		}
@@ -542,8 +559,11 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 
 	// Bottom border
 	if b != nil && t.showEdge {
-		result = append(result, segment.NewText(b.GetBottom(widths), borderStyle))
-		result = append(result, nl)
+		bottomStr := b.GetBottom(widths)
+		if strings.TrimSpace(bottomStr) != "" {
+			result = append(result, segment.NewText(bottomStr, borderStyle))
+			result = append(result, nl)
+		}
 	}
 
 	return result
