@@ -11,6 +11,10 @@ import (
 	"github.com/depado/gorich/segment"
 )
 
+type taskCleaner interface {
+	Cleanup(TaskID)
+}
+
 // Progress manages multiple progress tasks.
 type Progress struct {
 	mu                  sync.Mutex
@@ -250,6 +254,12 @@ func (p *Progress) RemoveTask(taskID TaskID) {
 		if id == taskID {
 			p.taskOrder = append(p.taskOrder[:i], p.taskOrder[i+1:]...)
 			break
+		}
+	}
+
+	for _, col := range p.columns {
+		if cleaner, ok := col.(taskCleaner); ok {
+			cleaner.Cleanup(taskID)
 		}
 	}
 }

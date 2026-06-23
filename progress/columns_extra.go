@@ -47,6 +47,14 @@ func (sc *SpinnerColumn) SetTaskSpinner(id TaskID, name string) {
 	sc.perTaskNames[id] = name
 }
 
+// Cleanup removes per-task state for the given task ID.
+func (sc *SpinnerColumn) Cleanup(id TaskID) {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	delete(sc.spinners, id)
+	delete(sc.perTaskNames, id)
+}
+
 // WithSpinnerName sets the spinner name.
 func WithSpinnerName(name string) func(*SpinnerColumn) {
 	return func(sc *SpinnerColumn) {
