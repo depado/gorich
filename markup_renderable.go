@@ -51,3 +51,26 @@ func (mr *MarkupRenderable) Measure(c *console.Console, opts console.Options) co
 func (mr *MarkupRenderable) Content() string {
 	return mr.content
 }
+
+// MarkupText wraps a pre-parsed markup.Text as a console.Renderable.
+// Use this to avoid re-parsing when you already have a parsed result.
+// For raw markup strings, use NewMarkupRenderable instead.
+type MarkupText struct {
+	Text markup.Text
+}
+
+// NewMarkupText creates a MarkupText from a pre-parsed markup.Text.
+func NewMarkupText(t markup.Text) *MarkupText {
+	return &MarkupText{Text: t}
+}
+
+// Render implements console.Renderable.
+func (mt *MarkupText) Render(c *console.Console, opts console.Options) []segment.Segment {
+	return mt.Text.Render()
+}
+
+// Measure implements console.Measurable.
+func (mt *MarkupText) Measure(c *console.Console, opts console.Options) console.Measurement {
+	w := cells.Len(mt.Text.Plain)
+	return console.NewMeasurement(w, w)
+}
