@@ -338,28 +338,8 @@ func (t *Table) extraWidth() int {
 	return 2 + len(t.columns) - 1
 }
 
-func (t *Table) getPadding(firstRow, lastRow bool) (int, int, int, int) {
-	top, right, bottom, left := t.padTop, t.padRight, t.padBottom, t.padLeft
-	if t.collapsePadding {
-		if t.padLeft > t.padRight {
-			left = t.padLeft - t.padRight
-			right = 0
-		} else {
-			right = t.padRight - t.padLeft
-			left = 0
-		}
-	}
-	if !t.padEdge {
-		left = 0
-		right = 0
-		if firstRow {
-			top = 0
-		}
-		if lastRow {
-			bottom = 0
-		}
-	}
-	return top, right, bottom, left
+func (t *Table) getPadding(firstCol, lastCol bool) (int, int, int, int) {
+	return t.computePadding(firstCol, lastCol, false, false)
 }
 
 func (t *Table) paddingWidth(colIndex int) int {
