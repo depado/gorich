@@ -12,14 +12,9 @@ import (
 type ControlType int
 
 const (
-	ControlBell ControlType = iota
-	ControlCarriageReturn
-	ControlHome
-	ControlClear
+	ControlCarriageReturn ControlType = iota
 	ControlShowCursor
 	ControlHideCursor
-	ControlEnableAltScreen
-	ControlDisableAltScreen
 	ControlCursorUp
 	ControlCursorDown
 	ControlCursorForward
@@ -28,7 +23,6 @@ const (
 	ControlEraseInLine
 	ControlEraseInDisplay
 	ControlSetTitle
-	ControlSetWindowTitle
 )
 
 // ControlCode represents a control operation with optional parameters.
@@ -78,16 +72,6 @@ func CarriageReturn() Control {
 	return NewControl(ControlCode{Type: ControlCarriageReturn})
 }
 
-// Home creates a control to move cursor to home position (1, 1).
-func Home() Control {
-	return NewControl(ControlCode{Type: ControlHome})
-}
-
-// Clear creates a control to clear the screen.
-func Clear() Control {
-	return NewControl(ControlCode{Type: ControlClear})
-}
-
 // ShowCursor creates a control to show the cursor.
 func ShowCursor() Control {
 	return NewControl(ControlCode{Type: ControlShowCursor})
@@ -96,16 +80,6 @@ func ShowCursor() Control {
 // HideCursor creates a control to hide the cursor.
 func HideCursor() Control {
 	return NewControl(ControlCode{Type: ControlHideCursor})
-}
-
-// EnableAltScreen creates a control to enable the alternate screen buffer.
-func EnableAltScreen() Control {
-	return NewControl(ControlCode{Type: ControlEnableAltScreen})
-}
-
-// DisableAltScreen creates a control to disable the alternate screen buffer.
-func DisableAltScreen() Control {
-	return NewControl(ControlCode{Type: ControlDisableAltScreen})
 }
 
 // EraseInLine creates a control to erase in the current line.
@@ -148,22 +122,12 @@ func (c Control) Render() string {
 // Render produces the ANSI escape sequence for this control code.
 func (cc ControlCode) Render() string {
 	switch cc.Type {
-	case ControlBell:
-		return "\a"
 	case ControlCarriageReturn:
 		return "\r"
-	case ControlHome:
-		return csi + "H"
-	case ControlClear:
-		return csi + "2J"
 	case ControlShowCursor:
 		return csi + "?25h"
 	case ControlHideCursor:
 		return csi + "?25l"
-	case ControlEnableAltScreen:
-		return csi + "?1049h"
-	case ControlDisableAltScreen:
-		return csi + "?1049l"
 	case ControlCursorUp:
 		n := 1
 		if len(cc.Params) > 0 {
@@ -206,7 +170,7 @@ func (cc ControlCode) Render() string {
 			mode = cc.Params[0]
 		}
 		return fmt.Sprintf("%s%dJ", csi, mode)
-	case ControlSetTitle, ControlSetWindowTitle:
+	case ControlSetTitle:
 		return fmt.Sprintf("%s2;%s%s", osc, cells.SanitizeOSC(cc.Text), st)
 	default:
 		return ""
