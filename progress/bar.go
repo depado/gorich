@@ -39,16 +39,15 @@ type ProgressBar struct {
 	ASCIIOnly     bool
 	Finished      bool    // Task is finished (use finished style)
 
-	// Style names (keys in the style map)
-	BackStyle     string
-	CompleteStyle string
-	FinishedStyle string
-	PulseStyle    string
+	BackStyle     *style.Style
+	CompleteStyle *style.Style
+	FinishedStyle *style.Style
+	PulseStyle    *style.Style
 }
 
-// DefaultBarStyles returns the default style names for a progress bar.
-func DefaultBarStyles() (back, complete, finished, pulse string) {
-	return "bar.back", "bar.complete", "bar.finished", "bar.pulse"
+// DefaultBarStyles returns the default styles for a progress bar.
+func DefaultBarStyles() (back, complete, finished, pulse *style.Style) {
+	return nil, nil, nil, nil
 }
 
 // Render implements console.Renderable.
@@ -225,24 +224,19 @@ func (pb *ProgressBar) Measure(c *console.Console, opts console.Options) console
 	return console.NewMeasurement(width, width)
 }
 
-// Helper to get a style by name, with fallback
-func getBarStyle(name, fallback string) style.Style {
-	// Use fallback if name is empty
-	if name == "" {
-		name = fallback
+func getBarStyle(override *style.Style, fallback string) style.Style {
+	if override != nil {
+		return *override
 	}
-
-	// For now, return hard-coded styles
-	// In a full implementation, these would come from a theme
-	switch name {
+	switch fallback {
 	case "bar.complete":
-		return style.New().WithForeground(style.TrueColor(249, 38, 114)) // Magenta-ish
+		return style.New().WithForeground(style.TrueColor(249, 38, 114))
 	case "bar.finished":
-		return style.New().WithForeground(style.TrueColor(0, 255, 0)) // Green
+		return style.New().WithForeground(style.TrueColor(0, 255, 0))
 	case "bar.back":
-		return style.New().WithForeground(style.TrueColor(68, 68, 68)) // Dark gray
+		return style.New().WithForeground(style.TrueColor(68, 68, 68))
 	case "bar.pulse":
-		return style.New().WithForeground(style.TrueColor(128, 0, 255)) // Purple
+		return style.New().WithForeground(style.TrueColor(128, 0, 255))
 	default:
 		return style.New()
 	}

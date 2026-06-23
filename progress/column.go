@@ -183,11 +183,11 @@ func DescriptionColumn(opts ...func(*TextColumn)) *TextColumn {
 
 // BarColumn displays the progress bar.
 type BarColumn struct {
-	BarWidth      *int   // Width of the bar, nil = auto
-	Style         string // Style name for completed portion
-	CompleteStyle string
-	FinishedStyle string
-	PulseStyle    string
+	BarWidth      *int
+	Style         *style.Style
+	CompleteStyle *style.Style
+	FinishedStyle *style.Style
+	PulseStyle    *style.Style
 	maxRefresh    time.Duration
 }
 
