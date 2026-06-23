@@ -148,6 +148,53 @@ func TestTableAddStyledRowNonStringValues(t *testing.T) {
 	}
 }
 
+func TestTableCollapsePaddingConsistency(t *testing.T) {
+	tbl := NewTableWithOptions(nil,
+		WithPad(0, 2, 0, 1),
+		WithCollapsePadding(),
+	)
+	tbl.AddColumn("A")
+	tbl.AddColumn("B")
+	tbl.AddColumn("C")
+
+	pw0 := tbl.paddingWidth(0)
+	pw1 := tbl.paddingWidth(1)
+
+	_, right0, _, left0 := tbl.computePadding(true, false, false, false)
+	if pw0 != left0+right0 {
+		t.Errorf("paddingWidth(0)=%d, computePadding gives left=%d right=%d sum=%d", pw0, left0, right0, left0+right0)
+	}
+
+	_, right1, _, left1 := tbl.computePadding(false, false, false, false)
+	if pw1 != left1+right1 {
+		t.Errorf("paddingWidth(1)=%d, computePadding gives left=%d right=%d sum=%d", pw1, left1, right1, left1+right1)
+	}
+}
+
+func TestTableRenderWithCollapsePadding(t *testing.T) {
+	c := console.New(console.WithWidth(60), console.WithNoColor(true), console.WithForceTerminal(true))
+	tbl := NewTableWithOptions([]string{"Name", "Value"},
+		WithPad(0, 2, 0, 1),
+		WithCollapsePadding(),
+	)
+	tbl.AddRow("Short", "x")
+	tbl.AddRow("LongerName", "xyz")
+
+	result := tbl.Render(c, c.Options())
+	var output strings.Builder
+	for _, seg := range result {
+		output.WriteString(seg.Text)
+	}
+	out := output.String()
+
+	if !strings.Contains(out, "Short") || !strings.Contains(out, "LongerName") {
+		t.Error("table is missing expected cell content")
+	}
+	if !strings.Contains(out, "┏") && !strings.Contains(out, "+") {
+		t.Error("table output missing border characters")
+	}
+}
+
 func segmentsToString(segs []segment.Segment, cs style.ColorSystem) string {
 	var sb strings.Builder
 	for _, seg := range segs {
