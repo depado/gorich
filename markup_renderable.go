@@ -1,6 +1,8 @@
 package gorich
 
 import (
+	"sync"
+
 	"github.com/depado/gorich/console"
 	"github.com/depado/gorich/internal/cells"
 	"github.com/depado/gorich/markup"
@@ -11,6 +13,7 @@ import (
 // Rich-style markup on render. It implements both console.Renderable
 // and console.Measurable.
 type MarkupRenderable struct {
+	mu        sync.Mutex
 	content   string
 	parsed    *markup.Text
 	parsedStr string
@@ -22,6 +25,8 @@ func NewMarkupRenderable(content string) *MarkupRenderable {
 }
 
 func (mr *MarkupRenderable) getParsed() markup.Text {
+	mr.mu.Lock()
+	defer mr.mu.Unlock()
 	if mr.parsed != nil && mr.parsedStr == mr.content {
 		return *mr.parsed
 	}
