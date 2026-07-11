@@ -19,9 +19,8 @@ type taskCleaner interface {
 type Progress struct {
 	mu                  sync.Mutex
 	console             *console.Console
-	columns             []Column
+	sections            []*Section
 	tasks               map[TaskID]*Task
-	taskOrder           []TaskID // Maintains insertion order
 	nextTaskID          TaskID
 	live                *live.Live
 	speedEstimatePeriod float64
@@ -43,10 +42,12 @@ func WithConsole(c *console.Console) Option {
 	}
 }
 
-// WithColumns sets the columns to display.
+// WithColumns sets the columns for the default section (section 0).
 func WithColumns(columns ...Column) Option {
 	return func(p *Progress) {
-		p.columns = columns
+		if len(p.sections) > 0 {
+			p.sections[0].columns = columns
+		}
 	}
 }
 
@@ -94,6 +95,9 @@ func New(opts ...Option) *Progress {
 		getTime:             defaultGetTime,
 	}
 
+	// Create the implicit default section so WithColumns can target it.
+	p.sections = []*Section{{idx: 0, progress: p}}
+
 	for _, opt := range opts {
 		opt(p)
 	}
@@ -102,8 +106,8 @@ func New(opts ...Option) *Progress {
 		p.console = console.New()
 	}
 
-	if len(p.columns) == 0 {
-		p.columns = DefaultColumns()
+	if len(p.sections[0].columns) == 0 {
+		p.sections[0].columns = DefaultColumns()
 	}
 
 	return p
@@ -159,30 +163,27 @@ func (p *Progress) Stop() {
 	}
 }
 
-// AddTask adds a new task and returns its ID.
+// AddTask adds a new task to the default section and returns its ID.
 func (p *Progress) AddTask(description string, total *float64, opts ...TaskOption) TaskID {
+	return p.sections[0].AddTask(description, total, opts...)
+}
+
+// AddSection adds a new section with the given options and returns it.
+// Sections render in the order they are added. The default section (section 0)
+// is created implicitly by New.
+func (p *Progress) AddSection(opts ...SectionOption) *Section {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	cfg := TaskConfig{
-		Description: description,
-		Total:       total,
-		Visible:     true,
-		Start:       true,
+	section := &Section{
+		idx:      len(p.sections),
+		progress: p,
 	}
-
 	for _, opt := range opts {
-		opt(&cfg)
+		opt(section)
 	}
-
-	id := p.nextTaskID
-	p.nextTaskID++
-
-	task := NewTask(id, cfg, p.getTime, p.speedEstimatePeriod)
-	p.tasks[id] = task
-	p.taskOrder = append(p.taskOrder, id)
-
-	return id
+	p.sections = append(p.sections, section)
+	return section
 }
 
 // TaskOption configures task creation.
@@ -247,21 +248,34 @@ func (p *Progress) RemoveTask(taskID TaskID) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	if _, ok := p.tasks[taskID]; !ok {
+		return
+	}
+
+	section := p.sectionForTask(taskID)
+
 	delete(p.tasks, taskID)
 
-	// Remove from order slice
-	for i, id := range p.taskOrder {
-		if id == taskID {
-			p.taskOrder = append(p.taskOrder[:i], p.taskOrder[i+1:]...)
-			break
-		}
-	}
+	if section != nil {
+		section.removeID(taskID)
 
-	for _, col := range p.columns {
-		if cleaner, ok := col.(taskCleaner); ok {
-			cleaner.Cleanup(taskID)
+		for _, col := range section.columns {
+			if cleaner, ok := col.(taskCleaner); ok {
+				cleaner.Cleanup(taskID)
+			}
 		}
 	}
+}
+
+func (p *Progress) sectionForTask(taskID TaskID) *Section {
+	for _, section := range p.sections {
+		for _, id := range section.taskOrder {
+			if id == taskID {
+				return section
+			}
+		}
+	}
+	return nil
 }
 
 // StartTask begins timing a task.
@@ -347,56 +361,91 @@ func (p *Progress) getRenderable() console.Renderable {
 
 // makeRenderable creates the renderable (must hold lock).
 func (p *Progress) makeRenderable() console.Renderable {
-	// Get visible task snapshots in order
-	var snapshots []TaskSnapshot
-	for _, id := range p.taskOrder {
-		if task, ok := p.tasks[id]; ok {
-			snap := task.Snapshot()
-			if snap.Visible {
-				snapshots = append(snapshots, snap)
+	var sectionRenders []sectionRenderable
+	for _, section := range p.sections {
+		var snapshots []TaskSnapshot
+		for _, id := range section.taskOrder {
+			if task, ok := p.tasks[id]; ok {
+				snap := task.Snapshot()
+				if snap.Visible {
+					snapshots = append(snapshots, snap)
+				}
 			}
 		}
+		if len(snapshots) == 0 {
+			continue
+		}
+		applyAutoWidth(section.columns, snapshots)
+		sectionRenders = append(sectionRenders, sectionRenderable{
+			columns:   section.columns,
+			snapshots: snapshots,
+			indent:    section.indent,
+		})
 	}
 
-	if len(snapshots) == 0 {
+	if len(sectionRenders) == 0 {
 		return nil
 	}
 
-	return &progressRenderable{
-		columns:   p.columns,
-		snapshots: snapshots,
+	return &progressRenderable{sections: sectionRenders}
+}
+
+// applyAutoWidth sizes any auto-width TextColumn to the widest value across the
+// given snapshots. Must be called while holding p.mu so it never races with a
+// concurrent String() call; the Live render goroutine only reads Width later.
+func applyAutoWidth(cols []Column, snaps []TaskSnapshot) {
+	for _, col := range cols {
+		tc, ok := col.(*TextColumn)
+		if !ok || !tc.AutoWidth {
+			continue
+		}
+		max := 0
+		for _, s := range snaps {
+			if w := tc.contentWidth(s); w > max {
+				max = w
+			}
+		}
+		tc.Width = max
 	}
 }
 
-// progressRenderable renders all tasks.
+// progressRenderable renders all tasks across sections.
 type progressRenderable struct {
+	sections []sectionRenderable
+}
+
+type sectionRenderable struct {
 	columns   []Column
 	snapshots []TaskSnapshot
+	indent    int
 }
 
 // Render implements console.Renderable.
 func (pr *progressRenderable) Render(c *console.Console, opts console.Options) []segment.Segment {
 	var allSegments []segment.Segment
+	numSections := len(pr.sections)
 
-	for i, snap := range pr.snapshots {
-		// Render each column for this task
-		var lineSegments []segment.Segment
+	for si, sr := range pr.sections {
+		for i, snap := range sr.snapshots {
+			var lineSegments []segment.Segment
 
-		for j, col := range pr.columns {
-			colSegments := col.Render(snap, c, opts)
-			lineSegments = append(lineSegments, colSegments...)
-
-			// Add spacing between columns (except after last)
-			if j < len(pr.columns)-1 {
-				lineSegments = append(lineSegments, segment.Segment{Text: " "})
+			if sr.indent > 0 {
+				lineSegments = append(lineSegments, segment.Segment{Text: strings.Repeat(" ", sr.indent)})
 			}
-		}
 
-		allSegments = append(allSegments, lineSegments...)
+			for j, col := range sr.columns {
+				colSegments := col.Render(snap, c, opts)
+				lineSegments = append(lineSegments, colSegments...)
+				if j < len(sr.columns)-1 {
+					lineSegments = append(lineSegments, segment.Segment{Text: " "})
+				}
+			}
 
-		// Add newline between tasks (except after last)
-		if i < len(pr.snapshots)-1 {
-			allSegments = append(allSegments, segment.Segment{Text: "\n"})
+			allSegments = append(allSegments, lineSegments...)
+
+			if i < len(sr.snapshots)-1 || si < numSections-1 {
+				allSegments = append(allSegments, segment.Segment{Text: "\n"})
+			}
 		}
 	}
 
@@ -434,19 +483,32 @@ func (p *Progress) String() string {
 	var b strings.Builder
 	opts := p.console.Options()
 
-	for _, id := range p.taskOrder {
-		if task, ok := p.tasks[id]; ok {
-			snap := task.Snapshot()
-			if !snap.Visible {
-				continue
+	for _, section := range p.sections {
+		var snapshots []TaskSnapshot
+		for _, id := range section.taskOrder {
+			if task, ok := p.tasks[id]; ok {
+				snap := task.Snapshot()
+				if snap.Visible {
+					snapshots = append(snapshots, snap)
+				}
+			}
+		}
+		if len(snapshots) == 0 {
+			continue
+		}
+		applyAutoWidth(section.columns, snapshots)
+
+		for _, snap := range snapshots {
+			if section.indent > 0 {
+				b.WriteString(strings.Repeat(" ", section.indent))
 			}
 
-			for j, col := range p.columns {
+			for j, col := range section.columns {
 				segments := col.Render(snap, p.console, opts)
 				for _, seg := range segments {
 					b.WriteString(seg.Text)
 				}
-				if j < len(p.columns)-1 {
+				if j < len(section.columns)-1 {
 					b.WriteString(" ")
 				}
 			}

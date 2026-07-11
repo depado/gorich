@@ -5,7 +5,7 @@ A Go port of Python's [Rich](https://github.com/Textualize/rich) library for bea
 ## Features
 
 - **Rich Print** - Styled text with `[bold red]markup[/]` syntax
-- **Progress Bars** - Multiple concurrent tasks with customizable columns
+- **Progress Bars** - Multiple concurrent tasks with customizable columns and per-group sections
 - **Tables** - Bordered tables with column styling, markup cells, row styles, footers, sections, and 19 box styles
 - **Flicker-free** - Single-write buffered output for smooth updates
 - **Speed estimation** - ETA calculation with rolling average
@@ -121,7 +121,7 @@ func main() {
 
 Output:
 ```
-  Processing ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  75% • 0:00:02
+Processing ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  75% • 0:00:02
 ```
 
 ## Multiple Tasks
@@ -152,9 +152,18 @@ go func() {
 
 Output:
 ```
- Downloading ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% • 0:00:00
-  Processing ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  65% • 0:00:03
-   Uploading ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  80% • 0:00:01
+Downloading ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% • 0:00:00
+Processing  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  65% • 0:00:03
+Uploading   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  80% • 0:00:01
+```
+
+Descriptions are left-aligned and automatically sized to the widest one so the
+bars line up. Pass `progress.WithJustify(console.JustifyRight)` for the classic
+right-aligned look, or `progress.WithWidth(n)` for a fixed width:
+
+```go
+progress.DescriptionColumn(progress.WithJustify(console.JustifyRight))
+progress.DescriptionColumn(progress.WithWidth(20))
 ```
 
 ## Custom Columns
@@ -178,7 +187,7 @@ p := progress.New(
 
 | Column | Description | Example Output |
 |--------|-------------|----------------|
-| `DescriptionColumn()` | Task description (supports markup) | `Downloading` |
+| `DescriptionColumn()` | Task description, markup + auto-width (left-aligned) | `Downloading` |
 | `NewBarColumn()` | Visual progress bar (turns green when done) | `━━━━━━━━━━━━━━━━` |
 | `NewTaskProgressColumn(showSpeed)` | Percentage or speed | `75%` |
 | `NewTimeRemainingColumn()` | Estimated time remaining | `0:00:15` |
@@ -241,6 +250,58 @@ p.Done(task, "[green]Connected![/]")          // mark done + update description
 `Done()` works on both indeterminate and determinate tasks. For determinate tasks
 that haven't reached 100%, it also sets completed to total for a proper visual
 finish (green bar, checkmark in spinner, etc.).
+
+## Sections
+
+By default all tasks share one column layout. Use **sections** to give groups of
+tasks their own columns and indentation - for example a full summary bar on top
+with lightweight worker rows underneath:
+
+```go
+p := progress.New(
+    progress.WithColumns(                     // default section (section 0)
+        progress.NewSpinnerColumn(),
+        progress.DescriptionColumn(),
+        progress.NewBarColumn(),
+        progress.NewTaskProgressColumn(false),
+        progress.NewSeparatorColumn("•"),
+        progress.NewTimeRemainingColumn(),
+    ),
+)
+
+// A second section with fewer columns, indented by 2 spaces
+workers := p.AddSection(
+    progress.WithSectionColumns(
+        progress.NewSpinnerColumn(),
+        progress.DescriptionColumn(),
+    ),
+    progress.WithSectionIndent(2),
+)
+
+p.Start(context.Background())
+defer p.Stop()
+
+total := 88.0
+summary := p.AddTask("[bold]Syncing depado[/]", &total)   // goes to section 0
+w1 := workers.AddTask("[cyan]articles - cloning...[/]", nil)  // goes to workers
+
+// Every task is addressed by its TaskID regardless of section
+p.Advance(summary, 1)
+p.Done(w1, "[green]articles[/]")
+```
+
+Output:
+```
+⠸ Syncing depado ━━━━━━━━━━━━━━━━━━━━  45% • 0:01:23
+  ⠸ articles - cloning...
+  ⠸ buoy - pulling...
+  ✓ gorich
+```
+
+Sections are a rendering grouping only: task updates always go through the
+`Progress` methods by `TaskID`. If you never call `AddSection`, behavior is
+identical to a single default section. Each section auto-sizes its own
+`DescriptionColumn` independently.
 
 ## Configuration Options
 
@@ -376,6 +437,13 @@ p.Advance(taskID, amount)
 p.Update(taskID, config)
 p.Done(taskID, description...)  // Mark task as finished
 p.RemoveTask(taskID)
+
+// Sections (per-group column layouts)
+section := p.AddSection(
+    progress.WithSectionColumns(cols...),
+    progress.WithSectionIndent(2),
+)
+taskID := section.AddTask(description, total, opts...)
 
 // Task timing
 p.StartTask(taskID)

@@ -33,6 +33,7 @@ type TextColumn struct {
 	Style      *style.Style
 	Justify    console.Justify
 	Width      int  // Minimum width (0 = no padding)
+	AutoWidth  bool // Size Width to the widest value in the section (recomputed each frame)
 	NoWrap     bool
 	Markup     bool // Enable markup parsing (default true)
 	maxRefresh time.Duration
@@ -64,10 +65,20 @@ func WithJustify(j console.Justify) func(*TextColumn) {
 	}
 }
 
-// WithWidth sets the minimum width for padding.
+// WithWidth sets the minimum width for padding. This disables auto-width.
 func WithWidth(w int) func(*TextColumn) {
 	return func(tc *TextColumn) {
 		tc.Width = w
+		tc.AutoWidth = false
+	}
+}
+
+// WithAutoWidth sizes the column to the widest value among the tasks in the
+// same section, recomputed on each render. This keeps following columns
+// (e.g. the bar) aligned without hardcoding a width.
+func WithAutoWidth() func(*TextColumn) {
+	return func(tc *TextColumn) {
+		tc.AutoWidth = true
 	}
 }
 
@@ -133,6 +144,16 @@ func (tc *TextColumn) formatText(task TaskSnapshot) string {
 	return text
 }
 
+// contentWidth returns the visible width of the text this column would render
+// for the given task, before any Width padding is applied.
+func (tc *TextColumn) contentWidth(task TaskSnapshot) int {
+	text := tc.formatText(task)
+	if tc.Markup {
+		return markup.VisibleLength(text)
+	}
+	return len(text)
+}
+
 // MaxRefresh implements Column.
 func (tc *TextColumn) MaxRefresh() time.Duration {
 	return tc.maxRefresh
@@ -164,10 +185,10 @@ func (sc *SeparatorColumn) MaxRefresh() time.Duration {
 // Supports markup syntax like "[bold red]Downloading[/]" in task descriptions.
 func DescriptionColumn(opts ...func(*TextColumn)) *TextColumn {
 	tc := &TextColumn{
-		Text:    "", // Empty means use task.Description
-		Justify: console.JustifyRight,
-		Width:   12,
-		Markup:  true, // Enable markup by default
+		Text:      "", // Empty means use task.Description
+		Justify:   console.JustifyLeft,
+		AutoWidth: true, // Size to the widest description in the section
+		Markup:    true, // Enable markup by default
 	}
 	for _, opt := range opts {
 		opt(tc)
