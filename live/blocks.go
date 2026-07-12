@@ -42,7 +42,9 @@ type Block struct {
 
 	// SpinnerStyle overrides the running-frame spinner style. nil = dim cyan.
 	SpinnerStyle *style.Style
-	// RunningStyle sets the running header title style. nil = unstyled (use markup in the title for styling).
+	// RunningStyle is the base style for the running header title. Markup in the
+	// title layers on top of it (overriding only what it sets), so use this for a
+	// uniform default look and markup for per-title tweaks. nil = unstyled.
 	RunningStyle *style.Style
 	// SucceededStyle overrides the succeeded header title style. nil = green bold.
 	SucceededStyle *style.Style
@@ -310,10 +312,10 @@ func renderBlockHeader(blk *Block, now float64) []segment.Segment {
 	}
 }
 
-// renderTitle parses the title as markup, layering each span over the status
-// style so a plain title keeps the status style while markup like "[white]foo[/]"
-// overrides only what it explicitly sets (color) and inherits the rest (e.g. the
-// bold + status color of a finished block).
+// renderTitle parses the title as markup and composes each span with the base
+// style: fallback is the base layer, markup layers on top via Style.Add so it
+// overrides only the attributes it sets and inherits the rest. A plain title
+// (no markup) is rendered entirely in fallback.
 func renderTitle(title string, fallback *style.Style) []segment.Segment {
 	segs := markup.Render(title)
 	for i := range segs {

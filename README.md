@@ -8,7 +8,7 @@ A Go port of Python's [Rich](https://github.com/Textualize/rich) library for bea
 - **Progress Bars** - Multiple concurrent tasks with customizable columns and per-group sections
 - **Live Blocks** - Growing per-task output blocks with animated spinners, styled line prefixes, and optional space reservation
 - **Tables** - Bordered tables with column styling, markup cells, row styles, footers, sections, and 19 box styles
-- **Flicker-free** - Single-write buffered output for smooth updates
+- **Flicker-free** - Single-write buffered output with synchronized-output (DEC 2026) frames for smooth updates
 - **Speed estimation** - ETA calculation with rolling average
 - **File progress** - `io.Reader`/`io.Writer` wrappers for IO tracking
 - **50+ spinners** - Animated spinners from cli-spinners
@@ -391,6 +391,7 @@ Output (in a terminal):
 | `WithBlockSpinnerName(name)` | `"dots"` | Spinner animation for running blocks (see [Spinners](#spinners)) |
 | `WithBlockPrefix(prefix)` | `"  "` | String prepended to every output line. Supports [markup](#markup-syntax) — e.g. `"[blue]│ [/]"` renders a blue vertical bar |
 | — | — | Output lines passed to `AppendLine` / `BlockWriter` also support markup. Use `"[red]error[/]"` for stderr, `"[dim]output[/]"` for stdout, or plain text (inherits the block's `OutputStyle`) |
+| — | — | Block titles passed to `Start` also support markup — e.g. `display.Start("[cyan]api[/]")`. Markup layers over the status style, so `[white]auth[/]` on a finished block keeps the status bold and only overrides the color |
 | `WithBlockReserveSpace(bool)` | `false` | When true, pads each block with blank lines up to `maxLines` so the height is stable from the start. When false (default), blocks grow organically as output arrives |
 
 ### Per-block style overrides
@@ -401,7 +402,7 @@ override the defaults:
 ```go
 type Block struct {
     SpinnerStyle   *style.Style  // nil = cyan
-    RunningStyle   *style.Style  // nil = dim
+    RunningStyle   *style.Style  // nil = unstyled; base style, markup in the title layers on top
     SucceededStyle *style.Style  // nil = green bold
     FailedStyle    *style.Style  // nil = red bold
     OutputStyle    *style.Style  // nil = dim
