@@ -42,7 +42,7 @@ type Block struct {
 
 	// SpinnerStyle overrides the running-frame spinner style. nil = dim cyan.
 	SpinnerStyle *style.Style
-	// RunningStyle overrides the running header title style. nil = cyan.
+	// RunningStyle sets the running header title style. nil = unstyled (use markup in the title for styling).
 	RunningStyle *style.Style
 	// SucceededStyle overrides the succeeded header title style. nil = green bold.
 	SucceededStyle *style.Style
@@ -279,14 +279,17 @@ func renderBlockHeader(blk *Block, now float64) []segment.Segment {
 	switch blk.Status {
 	case BlockSucceeded:
 		s := defaultSucceededStyle(blk)
-		line := []segment.Segment{segment.NewText("✓ ", s), segment.NewText(blk.Title, s)}
+		line := []segment.Segment{segment.NewText("✓ ", s)}
+		line = append(line, renderTitle(blk.Title, s)...)
 		if blk.Elapsed > 0 {
 			line = append(line, segment.NewText(fmt.Sprintf(" (%s)", blk.Elapsed.Round(time.Millisecond)), &style.Dim))
 		}
 		return line
 	case BlockFailed:
 		s := defaultFailedStyle(blk)
-		line := []segment.Segment{segment.NewText("✗ ", s), segment.NewText(fmt.Sprintf("%s (exit %d)", blk.Title, blk.ExitCode), s)}
+		line := []segment.Segment{segment.NewText("✗ ", s)}
+		line = append(line, renderTitle(blk.Title, s)...)
+		line = append(line, segment.NewText(fmt.Sprintf(" (exit %d)", blk.ExitCode), s))
 		if blk.Elapsed > 0 {
 			line = append(line, segment.NewText(fmt.Sprintf(" (%s)", blk.Elapsed.Round(time.Millisecond)), &style.Dim))
 		}
@@ -302,8 +305,26 @@ func renderBlockHeader(blk *Block, now float64) []segment.Segment {
 			}
 		}
 		titleStyle := defaultRunningStyle(blk)
-		return append(spinSegs, segment.NewText(" "+blk.Title, titleStyle))
+		line := append(spinSegs, segment.NewText(" ", titleStyle))
+		return append(line, renderTitle(blk.Title, titleStyle)...)
 	}
+}
+
+// renderTitle parses the title as markup, layering each span over the status
+// style so a plain title keeps the status style while markup like "[white]foo[/]"
+// overrides only what it explicitly sets (color) and inherits the rest (e.g. the
+// bold + status color of a finished block).
+func renderTitle(title string, fallback *style.Style) []segment.Segment {
+	segs := markup.Render(title)
+	for i := range segs {
+		if segs[i].Style == nil {
+			segs[i].Style = fallback
+		} else if fallback != nil {
+			merged := fallback.Add(*segs[i].Style)
+			segs[i].Style = &merged
+		}
+	}
+	return segs
 }
 
 func defaultSpinnerStyle(b *Block) *style.Style {
@@ -315,10 +336,7 @@ func defaultSpinnerStyle(b *Block) *style.Style {
 }
 
 func defaultRunningStyle(b *Block) *style.Style {
-	if b.RunningStyle != nil {
-		return b.RunningStyle
-	}
-	return &style.Dim
+	return b.RunningStyle
 }
 
 func defaultSucceededStyle(b *Block) *style.Style {

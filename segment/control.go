@@ -23,6 +23,8 @@ const (
 	ControlEraseInLine
 	ControlEraseInDisplay
 	ControlSetTitle
+	ControlBeginSyncUpdate
+	ControlEndSyncUpdate
 )
 
 // ControlCode represents a control operation with optional parameters.
@@ -99,6 +101,19 @@ func SetTitle(title string) Control {
 	return NewControl(ControlCode{Type: ControlSetTitle, Text: title})
 }
 
+// BeginSyncUpdate creates a control that opens a synchronized output frame
+// (DEC private mode 2026). Terminals that support it buffer everything until
+// EndSyncUpdate and paint it atomically, eliminating flicker. Unsupported
+// terminals ignore the unknown mode.
+func BeginSyncUpdate() Control {
+	return NewControl(ControlCode{Type: ControlBeginSyncUpdate})
+}
+
+// EndSyncUpdate creates a control that closes a synchronized output frame.
+func EndSyncUpdate() Control {
+	return NewControl(ControlCode{Type: ControlEndSyncUpdate})
+}
+
 // ANSI escape sequence templates
 const (
 	csi = "\x1b["  // Control Sequence Introducer
@@ -172,6 +187,10 @@ func (cc ControlCode) Render() string {
 		return fmt.Sprintf("%s%dJ", csi, mode)
 	case ControlSetTitle:
 		return fmt.Sprintf("%s2;%s%s", osc, cells.SanitizeOSC(cc.Text), st)
+	case ControlBeginSyncUpdate:
+		return csi + "?2026h"
+	case ControlEndSyncUpdate:
+		return csi + "?2026l"
 	default:
 		return ""
 	}

@@ -188,6 +188,11 @@ func (l *Live) refresh() {
 	// Build everything into a single buffer for flicker-free output
 	var buf strings.Builder
 
+	// Open a synchronized-output frame so the terminal paints the whole
+	// erase+repaint atomically (no blank intermediate state). Unsupported
+	// terminals ignore the unknown mode.
+	buf.WriteString(segment.BeginSyncUpdate().Render())
+
 	// Position cursor to overwrite previous content
 	posCtrl := l.liveRender.PositionCursor()
 	if len(posCtrl.Codes) > 0 {
@@ -203,6 +208,9 @@ func (l *Live) refresh() {
 	for _, seg := range segments {
 		buf.WriteString(seg.Render(colorSys))
 	}
+
+	// Close the synchronized-output frame.
+	buf.WriteString(segment.EndSyncUpdate().Render())
 
 	// Single atomic write to terminal
 	l.console.WriteString(buf.String()) //nolint:errcheck // terminal output is fire-and-forget
@@ -247,8 +255,12 @@ func (l *Live) ProcessRenderables(renderables []console.Renderable) []console.Re
 	// Prepend cursor repositioning to clear previous live content
 	posCtrl := l.liveRender.PositionCursor()
 
-	// Result: [position_cursor, ...user_renderables, live_render]
-	result := make([]console.Renderable, 0, len(renderables)+2)
+	// Result: [begin_sync, position_cursor, ...user_renderables, live_render, end_sync]
+	// The synchronized-output frame makes the terminal paint the erase+repaint
+	// atomically, eliminating flicker with tall/multi-block displays.
+	result := make([]console.Renderable, 0, len(renderables)+4)
+
+	result = append(result, console.ControlRenderable{Control: segment.BeginSyncUpdate()})
 
 	if len(posCtrl.Codes) > 0 {
 		result = append(result, console.ControlRenderable{Control: posCtrl})
@@ -256,6 +268,7 @@ func (l *Live) ProcessRenderables(renderables []console.Renderable) []console.Re
 
 	result = append(result, renderables...)
 	result = append(result, l.liveRender)
+	result = append(result, console.ControlRenderable{Control: segment.EndSyncUpdate()})
 
 	return result
 }
