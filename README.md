@@ -6,6 +6,7 @@ A Go port of Python's [Rich](https://github.com/Textualize/rich) library for bea
 
 - **Rich Print** - Styled text with `[bold red]markup[/]` syntax
 - **Progress Bars** - Multiple concurrent tasks with customizable columns and per-group sections
+- **Live Blocks** - Growing per-task output blocks with animated spinners, styled line prefixes, and optional space reservation
 - **Tables** - Bordered tables with column styling, markup cells, row styles, footers, sections, and 19 box styles
 - **Flicker-free** - Single-write buffered output for smooth updates
 - **Speed estimation** - ETA calculation with rolling average
@@ -302,6 +303,128 @@ Sections are a rendering grouping only: task updates always go through the
 `Progress` methods by `TaskID`. If you never call `AddSection`, behavior is
 identical to a single default section. Each section auto-sizes its own
 `DescriptionColumn` independently.
+
+## Live Blocks
+
+`BlockDisplay` is a `console.Renderable` for showing a growing list of
+output blocks — useful when running parallel commands and streaming their
+output in a live, in-place display. Each block has a header with an animated
+spinner while running (which freezes into ✓ or ✗ on completion), followed by
+its last N output lines. Wrap it in a `live.Live` for auto-refresh:
+
+```go
+package main
+
+import (
+    "context"
+    "os/exec"
+    "sync"
+    "time"
+
+    "github.com/depado/gorich/console"
+    "github.com/depado/gorich/live"
+)
+
+func main() {
+    c := console.New()
+    display := live.NewBlockDisplay(
+        live.WithBlockMaxLines(3),
+        live.WithBlockSpinnerName("dots"),
+        live.WithBlockPrefix("[blue]│ [/]"),
+        live.WithBlockReserveSpace(false),
+    )
+
+    l := live.New(c, display, live.WithAutoRefresh(true), live.WithRefreshRate(15))
+    l.Start(context.Background())
+    defer l.Stop()
+
+    var wg sync.WaitGroup
+    repos := []struct{ name, expr string }{
+        {"alpha", "echo hi && sleep 0.5 && echo there && sleep 0.3 && echo done"},
+        {"delta", "echo failing && echo badly && sleep 0.3 && exit 2"},
+    }
+    for _, r := range repos {
+        wg.Add(1)
+        go func(r struct{ name, expr string }) {
+            defer wg.Done()
+            idx := display.Start(r.name)
+            out := display.NewWriter(idx)
+            cmd := exec.Command("sh", "-c", r.expr)
+            cmd.Stdout = out
+            cmd.Stderr = out
+            if err := cmd.Run(); err != nil {
+                if e, ok := err.(*exec.ExitError); ok {
+                    display.Finish(idx, e.ExitCode())
+                } else {
+                    display.Finish(idx, 1)
+                }
+            } else {
+                display.Finish(idx, 0)
+            }
+        }(r)
+    }
+    wg.Wait()
+    time.Sleep(300 * time.Millisecond)
+}
+```
+
+Output (in a terminal):
+
+```
+⠹ alpha
+│ hi
+│ there
+✗ delta (exit 2) (312ms)
+│ failing
+│ badly
+✓ alpha (807ms)
+│ hi
+│ there
+│ done
+```
+
+### Block options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `WithBlockMaxLines(n)` | `3` | Max output lines kept per block (ring buffer) |
+| `WithBlockSpinnerName(name)` | `"dots"` | Spinner animation for running blocks (see [Spinners](#spinners)) |
+| `WithBlockPrefix(prefix)` | `"  "` | String prepended to every output line. Supports [markup](#markup-syntax) — e.g. `"[blue]│ [/]"` renders a blue vertical bar |
+| `WithBlockReserveSpace(bool)` | `false` | When true, pads each block with blank lines up to `maxLines` so the height is stable from the start. When false (default), blocks grow organically as output arrives |
+
+### Per-block style overrides
+
+Each `Block` (obtained indirectly via `Start`) has optional style fields that
+override the defaults:
+
+```go
+type Block struct {
+    SpinnerStyle   *style.Style  // nil = cyan
+    RunningStyle   *style.Style  // nil = dim
+    SucceededStyle *style.Style  // nil = green bold
+    FailedStyle    *style.Style  // nil = red bold
+    OutputStyle    *style.Style  // nil = dim
+    // ...plus Title, Status, Lines, Elapsed, ExitCode
+}
+```
+
+### API
+
+```go
+display := live.NewBlockDisplay(opts...)
+
+// Lifecycle
+idx := display.Start("repo-name")        // append a running block, get its index
+display.AppendLine(idx, "output line")    // add a line (ring-buffered to maxLines)
+display.Finish(idx, exitCode)             // mark done (0=succeeded, non-zero=failed)
+
+// IO
+writer := display.NewWriter(idx)          // io.Writer that flushes complete lines
+```
+
+`BlockDisplay` implements `console.Renderable` and is safe for concurrent use
+— `Start`, `AppendLine`, `Finish`, and `BlockWriter.Write` may be called from
+any goroutine.
 
 ## Configuration Options
 
