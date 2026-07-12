@@ -239,9 +239,15 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 			}
 		}
 		for _, line := range blk.Lines {
-			row := make([]segment.Segment, 0, len(prefixSegs)+1)
+			lineSegs := markup.Render(line)
+			for i := range lineSegs {
+				if lineSegs[i].Style == nil {
+					lineSegs[i].Style = fallback
+				}
+			}
+			row := make([]segment.Segment, 0, len(prefixSegs)+len(lineSegs))
 			row = append(row, prefixSegs...)
-			row = append(row, segment.NewText(line, fallback))
+			row = append(row, lineSegs...)
 			lines = append(lines, row)
 		}
 		// When reserveSpace is enabled, pad with blank lines up to maxLines

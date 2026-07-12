@@ -390,6 +390,7 @@ Output (in a terminal):
 | `WithBlockMaxLines(n)` | `3` | Max output lines kept per block (ring buffer) |
 | `WithBlockSpinnerName(name)` | `"dots"` | Spinner animation for running blocks (see [Spinners](#spinners)) |
 | `WithBlockPrefix(prefix)` | `"  "` | String prepended to every output line. Supports [markup](#markup-syntax) — e.g. `"[blue]│ [/]"` renders a blue vertical bar |
+| — | — | Output lines passed to `AppendLine` / `BlockWriter` also support markup. Use `"[red]error[/]"` for stderr, `"[dim]output[/]"` for stdout, or plain text (inherits the block's `OutputStyle`) |
 | `WithBlockReserveSpace(bool)` | `false` | When true, pads each block with blank lines up to `maxLines` so the height is stable from the start. When false (default), blocks grow organically as output arrives |
 
 ### Per-block style overrides
