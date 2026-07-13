@@ -267,10 +267,21 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 		lines = lines[len(lines)-maxHeight:]
 	}
 
+	// Truncate each line to the terminal width so a long line never wraps onto
+	// a second physical row. The Live cursor math counts one row per logical
+	// line, so a wrapped line would leave stale rows the erase can't reach,
+	// stacking duplicate frames on every refresh.
+	// ponytail: measures with runewidth (tab = 0 cells); a tab-heavy line could
+	// still wrap. Expand tabs before truncating if that surfaces.
+	width := opts.Size.Width
+
 	var segs []segment.Segment
 	for i, line := range lines {
 		if i > 0 {
 			segs = append(segs, segment.Segment{Text: "\n"})
+		}
+		if width > 0 {
+			line = segment.AdjustLineLength(line, width, false)
 		}
 		segs = append(segs, line...)
 	}

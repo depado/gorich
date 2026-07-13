@@ -38,6 +38,12 @@ func main() {
 		func(r *rand.Rand) string { return "[white]heartbeat ok[/]" },
 		func(r *rand.Rand) string { return fmt.Sprintf("queue depth [red]%d[/]", r.Intn(500)) },
 		func(r *rand.Rand) string { return "[dim]rotating logs[/]" },
+		// A very long line that overflows the terminal width. Without truncation
+		// it wraps onto extra physical rows and the live erase math (one row per
+		// logical line) leaves stale rows behind, stacking duplicate frames.
+		func(r *rand.Rand) string {
+			return fmt.Sprintf("[dim]go build -ldflags \"-X 'main.Version=v1.2.3' -X 'main.Build=%d%d%d%d' -X 'main.BuildDate=2026-07-13T01:21:58Z' -X 'main.Commit=%d%d%d%d' -X 'main.Branch=feature/very-long-branch-name-that-keeps-going' -X 'main.Builder=ci-runner-node-42' -s -w\" -gcflags=all=-l -o ./bin/some-service-with-a-long-name ./cmd/some-service-with-a-long-name[/]", r.Intn(1e9), r.Intn(1e9), r.Intn(1e9), r.Intn(1e9), r.Intn(1e9), r.Intn(1e9), r.Intn(1e9), r.Intn(1e9))
+		},
 	}
 
 	var wg sync.WaitGroup
