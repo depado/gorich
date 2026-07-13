@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/depado/gorich/console"
+	"github.com/depado/gorich/style"
 )
 
 func TestSprintf(t *testing.T) {
@@ -17,7 +18,7 @@ func TestSprintf(t *testing.T) {
 		t.Errorf("Sprint no-color: got %q, want %q", got, "Hello World")
 	}
 
-	cc := console.New(console.WithForceTerminal(true))
+	cc := console.New(console.WithForceTerminal(true), console.WithColorSystem(style.ColorSystemStandard))
 	got := cc.Sprintf("[bold]Hi[/]")
 	if !strings.Contains(got, "Hi") || !strings.Contains(got, "\x1b[") {
 		t.Errorf("Sprintf color: expected ANSI codes around text, got %q", got)
