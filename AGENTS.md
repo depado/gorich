@@ -12,7 +12,7 @@ GoRich is a Go port of Python's [Rich](https://github.com/Textualize/rich) libra
 The project follows a layered architecture mirroring Rich's design:
 
 ```
-gorich/       <- Package-level convenience (Print, Printf, Log, Rule, MarkupRenderable)
+gorich/       <- Package-level convenience (Print, Printf, Sprint, Sprintf, Log, Rule, MarkupRenderable)
         ↓
 markup/       <- Rich-style markup parser
   ├── Parse("[bold red]text[/]") -> Text

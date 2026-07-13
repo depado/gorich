@@ -44,6 +44,10 @@ func main() {
     // Printf style (no trailing newline, like standard printf)
     gorich.Printf("[bold]Count:[/] %d", 42)
     gorich.Printf(" - [green]done[/]\n")
+
+    // Sprint/Sprintf return the rendered ANSI string instead of printing
+    s := gorich.Sprintf("[bold]Count:[/] %d", 42)
+    _ = s
     
     // Horizontal rules with optional styling
     gorich.Rule("Section Title")

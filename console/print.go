@@ -32,9 +32,32 @@ func (c *Console) Print(args ...any) {
 //
 //	console.Printf("[bold]Count:[/] %d\n", count)
 func (c *Console) Printf(format string, args ...any) {
+	out := c.Sprintf(format, args...)
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.out.Write([]byte(out)) //nolint:errcheck // terminal output is fire-and-forget
+}
 
+// Sprint renders Rich-style markup args and returns the resulting ANSI string.
+// Args are joined with spaces, like fmt.Sprint's space rules for non-strings.
+//
+// Example:
+//
+//	s := console.Sprint("[bold]Hello[/] [red]World[/]")
+func (c *Console) Sprint(args ...any) string {
+	var parts []string
+	for _, arg := range args {
+		parts = append(parts, fmt.Sprint(arg))
+	}
+	return c.Sprintf("%s", strings.Join(parts, " "))
+}
+
+// Sprintf renders formatted Rich-style markup and returns the resulting ANSI string.
+//
+// Example:
+//
+//	s := console.Sprintf("[bold]Count:[/] %d", count)
+func (c *Console) Sprintf(format string, args ...any) string {
 	text := fmt.Sprintf(format, args...)
 
 	// Parse markup and render
@@ -51,7 +74,7 @@ func (c *Console) Printf(format string, args ...any) {
 		output.WriteString(seg.Render(colorSys))
 	}
 
-	c.out.Write([]byte(output.String())) //nolint:errcheck // terminal output is fire-and-forget
+	return output.String()
 }
 
 // PrintMarkup prints pre-parsed markup segments.

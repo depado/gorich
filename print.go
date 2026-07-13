@@ -38,6 +38,20 @@ func Printf(format string, args ...any) {
 	defaultConsole.Printf(format, args...)
 }
 
+// Sprint renders Rich-style markup args and returns the resulting ANSI string.
+func Sprint(args ...any) string {
+	return defaultConsole.Sprint(args...)
+}
+
+// Sprintf renders formatted Rich-style markup and returns the resulting ANSI string.
+//
+// Example:
+//
+//	s := gorich.Sprintf("[bold]Count:[/] %d", 42)
+func Sprintf(format string, args ...any) string {
+	return defaultConsole.Sprintf(format, args...)
+}
+
 // Log prints with a log prefix.
 func Log(args ...any) {
 	defaultConsole.Log(args...)
