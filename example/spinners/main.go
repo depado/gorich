@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/depado/gorich"
+	"github.com/depado/gorich/live"
 	"github.com/depado/gorich/progress"
 )
 
@@ -132,4 +134,63 @@ func main() {
 	multilineDemo()
 	fmt.Println()
 	fmt.Println("Each task got its own spinner via spinnerCol.SetTaskSpinner().")
+
+	fmt.Println()
+	simpleSpinnerDemo()
+}
+
+func simpleSpinnerDemo() {
+	fmt.Println("Standalone Spinner API (live.StartSpinner)")
+	fmt.Println("==========================================")
+	fmt.Println()
+
+	fmt.Println("Basic: Stop() clears the line, then print your own message:")
+	s := live.StartSpinner("Doing some work...")
+	time.Sleep(1 * time.Second)
+	s.Stop()
+	gorich.Println("[bold green]✓[/] Work complete!")
+
+	time.Sleep(300 * time.Millisecond)
+
+	fmt.Println("Succeed() shortcut — green checkmark:")
+	s = live.StartSpinner("Processing request...")
+	time.Sleep(1 * time.Second)
+	s.Succeed("Request processed")
+
+	time.Sleep(300 * time.Millisecond)
+
+	fmt.Println("Fail() shortcut — red cross:")
+	s = live.StartSpinner("Connecting to database...")
+	time.Sleep(1 * time.Second)
+	s.Fail("Connection timed out")
+
+	time.Sleep(300 * time.Millisecond)
+
+	fmt.Println("Custom output with Stop() + gorich.Println:")
+	s = live.StartSpinner("Syncing...")
+	time.Sleep(1 * time.Second)
+	s.Stop()
+	gorich.Println("[bold yellow]⚠[/] Partial sync: 42/50 files")
+
+	time.Sleep(300 * time.Millisecond)
+
+	fmt.Println("With Update() mid-work:")
+	s = live.StartSpinner("Step 1: Initializing...")
+	time.Sleep(800 * time.Millisecond)
+	s.Update("Step 2: Downloading assets...")
+	time.Sleep(800 * time.Millisecond)
+	s.Update("Step 3: Validating...")
+	time.Sleep(800 * time.Millisecond)
+	s.Succeed("All steps complete")
+
+	time.Sleep(300 * time.Millisecond)
+
+	fmt.Println("Custom spinner & style:")
+	s = live.StartSpinner("Syncing...",
+		live.WithSpinnerName("arc"),
+		live.WithSpinnerSpeed(1.5),
+	)
+	time.Sleep(2 * time.Second)
+	s.Stop()
+	gorich.Println("[bold]Done![/]")
 }

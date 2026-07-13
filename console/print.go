@@ -11,14 +11,26 @@ import (
 	"github.com/depado/gorich/style"
 )
 
-// Print prints Rich-style markup to the console with a trailing newline.
-// Supports markup syntax like [bold red]Hello[/bold] World.
+// Print prints Rich-style markup to the console without a trailing newline.
 //
 // Example:
 //
 //	console.Print("[bold]Hello[/] [red]World[/]")
-//	console.Print("[italic green]Success![/]")
 func (c *Console) Print(args ...any) {
+	var parts []string
+	for _, arg := range args {
+		parts = append(parts, fmt.Sprint(arg))
+	}
+	c.Printf("%s", strings.Join(parts, " "))
+}
+
+// Println prints Rich-style markup to the console with a trailing newline.
+//
+// Example:
+//
+//	console.Println("[bold]Hello[/] [red]World[/]")
+//	console.Println("[italic green]Success![/]")
+func (c *Console) Println(args ...any) {
 	var parts []string
 	for _, arg := range args {
 		parts = append(parts, fmt.Sprint(arg))

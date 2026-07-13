@@ -2,12 +2,12 @@
 //
 // Quick start:
 //
-//	gorich.Print("[bold red]Hello[/] [green]World[/]")
+//	gorich.Println("[bold red]Hello[/] [green]World[/]")
 //
 // For more control, create a Console:
 //
 //	c := console.New()
-//	c.Print("[bold]Hello[/]")
+//	c.Println("[bold]Hello[/]")
 package gorich
 
 import (
@@ -17,16 +17,26 @@ import (
 // defaultConsole is the shared console for package-level functions.
 var defaultConsole = console.New()
 
-// Print prints Rich-style markup to stdout.
+// Print prints Rich-style markup to stdout without a trailing newline.
 //
 // Example:
 //
-//	gorich.Print("[bold]Hello[/] [red]World[/]")
-//	gorich.Print("[italic green]Success![/]")
-//	gorich.Print("[#ff0000]Hex color[/]")
-//	gorich.Print("[bold red on white]Styled text[/]")
+//	gorich.Print("Working... ")
+//	gorich.Print("[green]done[/]\n")
 func Print(args ...any) {
 	defaultConsole.Print(args...)
+}
+
+// Println prints Rich-style markup to stdout with a trailing newline.
+//
+// Example:
+//
+//	gorich.Println("[bold]Hello[/] [red]World[/]")
+//	gorich.Println("[italic green]Success![/]")
+//	gorich.Println("[#ff0000]Hex color[/]")
+//	gorich.Println("[bold red on white]Styled text[/]")
+func Println(args ...any) {
+	defaultConsole.Println(args...)
 }
 
 // Printf prints formatted Rich-style markup to stdout.

@@ -22,7 +22,7 @@ func main() {
 	tbl.AddRow("Bob", "25", "[blue]San Francisco[/]")
 	tbl.AddRow("[red]Charlie[/]", "35", "[green]London[/]")
 	c.Render(tbl)
-	c.Print()
+	c.Println()
 
 	// ── Right-aligned numbers, alternating rows ──
 	c.Printf("[bold]Sales report with right-aligned numbers, alternating rows:[/]\n")
@@ -43,7 +43,7 @@ func main() {
 	tbl2.AddRow("Gadget X", "7", "$19.99", "$139.93")
 	tbl2.AddRow("[italic]Gadget Y[/]", "3", "$29.99", "[bold]$89.97[/]")
 	c.Render(tbl2)
-	c.Print()
+	c.Println()
 
 	// ── Footer + sections ──
 	c.Printf("[bold]Footer + sections + show_lines:[/]\n")
@@ -68,7 +68,7 @@ func main() {
 	tbl3.AddRow("[bold]Code review[/]", "[dim]Pending[/]", "Alice")
 	tbl3.AddRow("[bold]Deploy[/]", "[dim]Pending[/]", "Bob")
 	c.Render(tbl3)
-	c.Print()
+	c.Println()
 
 	// ── Vertical alignment (top) ──
 	c.Printf("[bold]Vertical alignment (top):[/]\n")
@@ -83,7 +83,7 @@ func main() {
 	tbl4a.AddRow("Multi", "[dim]This text\nspans multiple lines\nand is top-aligned[/]")
 	tbl4a.AddRow("Aligned", "Single-line text sits at the top")
 	c.Render(tbl4a)
-	c.Print()
+	c.Println()
 
 	// ── Vertical alignment (middle) ──
 	c.Printf("[bold]Vertical alignment (middle):[/]\n")
@@ -98,7 +98,7 @@ func main() {
 	tbl4b.AddRow("Multi", "[dim]This text\nspans multiple lines\nand is middle-aligned[/]")
 	tbl4b.AddRow("Aligned", "Single-line text is centered vertically")
 	c.Render(tbl4b)
-	c.Print()
+	c.Println()
 
 	// ── Vertical alignment (bottom) ──
 	c.Printf("[bold]Vertical alignment (bottom):[/]\n")
@@ -113,7 +113,7 @@ func main() {
 	tbl4c.AddRow("Multi", "[dim]This text\nspans multiple lines\nand is bottom-aligned[/]")
 	tbl4c.AddRow("Aligned", "Single-line text sits at the bottom")
 	c.Render(tbl4c)
-	c.Print()
+	c.Println()
 
 	// ── Expand with ratios ──
 	c.Printf("[bold]Expand + ratio columns:[/]\n")
@@ -128,7 +128,7 @@ func main() {
 	tbl5.AddRow("narrow col", "This column gets 2x the space", "This gets 1x")
 	tbl5.AddRow("still 12", "Longer content here will be truncated", "Shorter")
 	c.Render(tbl5)
-	c.Print()
+	c.Println()
 
 	// ── All box styles gallery ──
 	c.Printf("[bold]Box Style Gallery:[/]\n")

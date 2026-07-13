@@ -4,6 +4,7 @@
 
 GoRich is a Go port of Python's [Rich](https://github.com/Textualize/rich) library for beautiful terminal output. It provides:
 - **Rich Print** - Styled text with `[bold red]markup[/]` syntax
+- **Standalone Spinners** - Simple flicker-free spinners with `live.StartSpinner("text")` (no progress machinery needed)
 - **Progress Bars** - Flicker-free, customizable progress displays with multiple concurrent tasks, speed estimation, and various column types
 - **Tables** - Bordered tables with column styling, alignment, markup cells, row styles, footers, sections, and 19 box styles
 
@@ -12,7 +13,7 @@ GoRich is a Go port of Python's [Rich](https://github.com/Textualize/rich) libra
 The project follows a layered architecture mirroring Rich's design:
 
 ```
-gorich/       <- Package-level convenience (Print, Printf, Sprint, Sprintf, Log, Rule, MarkupRenderable)
+gorich/       <- Package-level convenience (Print, Println, Printf, Sprint, Sprintf, Log, Rule, MarkupRenderable)
         ↓
 markup/       <- Rich-style markup parser
   ├── Parse("[bold red]text[/]") -> Text
@@ -36,7 +37,10 @@ table/        <- Table rendering package
         ↓
 live/         <- Auto-refreshing terminal display
   ├── Live (refresh goroutine, RenderHook)
-  └── LiveRender (cursor positioning)
+  ├── LiveRender (cursor positioning)
+  ├── BlockDisplay (multi-block output with spinners)
+  ├── Block (single block with status, output ring buffer)
+  └── ActiveSpinner (standalone spinner via StartSpinner())
         ↓
 console/      <- Terminal output engine
   ├── Console (terminal detection, color system)
@@ -206,6 +210,16 @@ When `padEdge=false`:
 ### live/
 - `Live` - Auto-refreshing display using goroutine + ticker
 - `LiveRender` - Tracks rendered shape, generates cursor repositioning codes
+- `ActiveSpinner` - Standalone spinner for simple "show a spinner while working" cases
+  - `StartSpinner(text, opts...)` - Creates and starts a spinner with a text message
+  - Methods: `Update(text)`, `Succeed(text...)`, `Fail(text...)`, `Stop()`
+  - Options: `WithSpinnerName(n)`, `WithSpinnerStyle(s)`, `WithSpinnerSpeed(s)`, `WithSpinnerRefreshRate(hz)`, `WithSpinnerConsole(c)`
+  - `Succeed()` replaces spinner with green `✓` and stops; `Fail()` with red `✗`
+  - `Stop()` clears the line and restores the cursor — use `gorich.Println(...)` after for full markup control over the final output
+  - Uses `spinner.Spinner` + `Live` internally, no `Progress` machinery needed
+  - Usage: `s := live.StartSpinner("Working..."); /* work */; s.Stop(); gorich.Println("[green]✓[/] Done!")`
+- `BlockDisplay` - Multi-block output with spinners, ring buffers, and status tracking
+- `Block` - Single block with status (`BlockRunning`/`BlockSucceeded`/`BlockFailed`), output lines, spinner
 
 ### console/
 - `Console` - Terminal output with detection (isatty, color system)
@@ -269,6 +283,7 @@ The refresh happens in a goroutine, so captured output won't show intermediate s
 go run ./example/progress/  # Progress bar demo
 go run ./example/print/     # Rich print demo
 go run ./example/table/     # Table demo
+go run ./example/spinners/  # Spinner demo (progress-based + standalone)
 ```
 
 ### Testing Table Rendering
@@ -286,6 +301,7 @@ result := tbl.Render(c, c.Options())
 |------|-------|
 | Rich print API | `print.go`, `console/print.go` |
 | Markup parser | `markup/markup.go` |
+| Standalone spinner | `live/spinner.go` |
 | Main progress API | `progress/progress.go` |
 | Task & speed estimation | `progress/task.go` |
 | Column implementations | `progress/column.go`, `progress/columns_extra.go` |
@@ -297,7 +313,7 @@ result := tbl.Render(c, c.Options())
 | Box border styles | `table/box/box.go` |
 | Cell padding wrapper | `table/padding/padding.go` |
 | Alignment renderable | `table/align/align.go` |
-| Live display | `live/live.go`, `live/render.go` |
+| Live display | `live/live.go`, `live/render.go`, `live/spinner.go`, `live/blocks.go` |
 | Console & terminal | `console/console.go` |
 | RenderLines helper | `console/console.go` (line 331) |
 | ANSI control codes | `segment/control.go` |

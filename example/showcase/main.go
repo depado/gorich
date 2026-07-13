@@ -33,12 +33,12 @@ func main() {
 func printDemo() {
 	gorich.Rule("[bold]Rich Print & Markup[/]", console.WithRuleStyle("cyan"))
 
-	gorich.Print("[bold]bold[/] [italic]italic[/] [underline]underline[/] [strike]strike[/]")
-	gorich.Print("[red]red[/] [green]green[/] [blue]blue[/] [#ff6600]hex[/] [rgb(100,150,200)]rgb[/]")
-	gorich.Print("[bold red on white]bold red on white[/]")
-	gorich.Print("Normal [red]red [bold]bold red[/bold] red[/red] normal")
+	gorich.Println("[bold]bold[/] [italic]italic[/] [underline]underline[/] [strike]strike[/]")
+	gorich.Println("[red]red[/] [green]green[/] [blue]blue[/] [#ff6600]hex[/] [rgb(100,150,200)]rgb[/]")
+	gorich.Println("[bold red on white]bold red on white[/]")
+	gorich.Println("Normal [red]red [bold]bold red[/bold] red[/red] normal")
 	gorich.Printf("[cyan]Progress:[/] %.1f%%\n", 75.5)
-	gorich.Print()
+	gorich.Println()
 }
 
 // tableDemo shows columns, styling, footers, sections, vertical alignment,
@@ -70,7 +70,7 @@ func tableDemo() {
 	tbl.AddSection()
 	tbl.AddRow("[italic]Gadget X[/]", "7", "$139.93")
 	c.Render(tbl)
-	c.Print()
+	c.Println()
 
 	// Vertical alignment + expand/ratio columns.
 	tbl2 := table.NewTableWithOptions(nil, table.WithExpand(), table.WithTitle("[bold]Expand + Vertical[/]"))
@@ -81,7 +81,7 @@ func tableDemo() {
 	tbl2.AddRow("Multi", "[dim]This text\nspans multiple lines\nand is centered vertically[/]")
 	tbl2.AddRow("Single", "Fills the flexible column and wraps to fit the width")
 	c.Render(tbl2)
-	c.Print()
+	c.Println()
 }
 
 // progressDemo shows multiple concurrent tasks with download-style columns.
