@@ -55,7 +55,7 @@ func main() {
 
 			r := rand.New(rand.NewSource(time.Now().UnixNano() + int64(len(name))))
 			ticks := 20 + r.Intn(20) // 20-39 log lines
-			for i := 0; i < ticks; i++ {
+			for range ticks {
 				time.Sleep(time.Duration(150+r.Intn(350)) * time.Millisecond)
 				display.AppendLine(idx, messages[r.Intn(len(messages))](r))
 			}

@@ -30,7 +30,7 @@ func spinnerShowcase(name, label string) {
 	total := 40.0
 	p.AddTask(fmt.Sprintf("[bold cyan]%-18s[/] [dim](%s)[/]", label, name), &total)
 
-	for i := 0; i < 40; i++ {
+	for range 40 {
 		time.Sleep(40 * time.Millisecond)
 		p.Advance(0, 1)
 	}

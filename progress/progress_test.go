@@ -77,7 +77,7 @@ func TestSpinnerColumnCleanup(t *testing.T) {
 	sc := NewSpinnerColumn()
 	sc.Cleanup(42) // no-op if not present
 	c := console.New(console.WithNoColor(true), console.WithForceTerminal(true))
-	snap := TaskSnapshot{ID: 42, Total: ptrFloat(10.0), CurrentTime: 0}
+	snap := TaskSnapshot{ID: 42, Total: new(10.0), CurrentTime: 0}
 	sc.Render(snap, c, c.Options()) // creates spinner for task 42
 	if _, ok := sc.spinners[42]; !ok {
 		t.Error("expected spinner to be created for task 42")
@@ -285,7 +285,7 @@ func TestProgressSectionsEmptySectionSkipped(t *testing.T) {
 	extra := p.AddSection(
 		WithSectionColumns(DescriptionColumn()),
 	)
-	extra.AddTask("extra", ptrFloat(5.0))
+	extra.AddTask("extra", new(5.0))
 
 	// workers is unused but declared — empty section should be skipped
 	_ = workers

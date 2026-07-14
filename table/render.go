@@ -313,10 +313,7 @@ func (t *Table) _collapseWidths(widths []int, wrapable []bool, maxWidth int) []i
 
 		maxReduce := make([]int, len(widths))
 		for i := range maxReduce {
-			mr := excess
-			if mr > colDiff {
-				mr = colDiff
-			}
+			mr := min(excess, colDiff)
 			maxReduce[i] = mr
 		}
 
@@ -403,8 +400,8 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 				rowStyle = t.rowStyles[dataIdx%len(t.rowStyles)]
 			}
 			if dataIdx >= 0 && dataIdx < len(t.rows) && t.rows[dataIdx].Style != nil {
-			rowStyle = mergeStyles(rowStyle, t.rows[dataIdx].Style)
-		}
+				rowStyle = mergeStyles(rowStyle, t.rows[dataIdx].Style)
+			}
 		}
 
 		maxHeight := 1
@@ -454,8 +451,8 @@ func (t *Table) _render(c *console.Console, opts console.Options, widths []int) 
 			w := widths[ci]
 			bgStyle := rowStyle
 			if rowCell[ci].style != nil {
-			bgStyle = mergeStyles(bgStyle, rowCell[ci].style)
-		}
+				bgStyle = mergeStyles(bgStyle, rowCell[ci].style)
+			}
 
 			aligned := alignVert(cellsLines[ci], vert, w, rowHeight, bgStyle)
 			shaped := setShape(aligned, w, maxHeight, bgStyle)
@@ -581,17 +578,17 @@ func alignVert(lines [][]segment.Segment, vert align.VerticalMethod, width, heig
 		topPad := pad / 2
 		bottomPad := pad - topPad
 		result := make([][]segment.Segment, 0, height)
-		for i := 0; i < topPad; i++ {
+		for range topPad {
 			result = append(result, blankLine)
 		}
 		result = append(result, lines...)
-		for i := 0; i < bottomPad; i++ {
+		for range bottomPad {
 			result = append(result, blankLine)
 		}
 		return result
 	case align.Bottom:
 		result := make([][]segment.Segment, 0, height)
-		for i := 0; i < pad; i++ {
+		for range pad {
 			result = append(result, blankLine)
 		}
 		result = append(result, lines...)
@@ -599,7 +596,7 @@ func alignVert(lines [][]segment.Segment, vert align.VerticalMethod, width, heig
 	default: // Top
 		result := make([][]segment.Segment, 0, height)
 		result = append(result, lines...)
-		for i := 0; i < pad; i++ {
+		for range pad {
 			result = append(result, blankLine)
 		}
 		return result

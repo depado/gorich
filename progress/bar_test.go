@@ -22,42 +22,42 @@ func TestBarRenderDeterminate(t *testing.T) {
 	}{
 		{
 			name:        "0% complete",
-			total:       ptrFloat(10.0),
+			total:       new(10.0),
 			completed:   0,
-			width:       ptrInt(10),
+			width:       new(10),
 			wantTextLen: 10,
 			wantText:    "          ",
 		},
 		{
 			name:        "50% complete",
-			total:       ptrFloat(10.0),
+			total:       new(10.0),
 			completed:   5,
-			width:       ptrInt(10),
+			width:       new(10),
 			wantTextLen: 10,
 			wantText:    "━━━━━     ",
 		},
 		{
 			name:        "100% complete",
-			total:       ptrFloat(10.0),
+			total:       new(10.0),
 			completed:   10,
-			width:       ptrInt(10),
+			width:       new(10),
 			finished:    true,
 			wantTextLen: 10,
 			wantText:    "━━━━━━━━━━",
 		},
 		{
 			name:        "33% at width 12",
-			total:       ptrFloat(12.0),
+			total:       new(12.0),
 			completed:   4,
-			width:       ptrInt(12),
+			width:       new(12),
 			wantTextLen: 12,
 			wantText:    "━━━━        ",
 		},
 		{
 			name:        "half char boundary",
-			total:       ptrFloat(4.0),
+			total:       new(4.0),
 			completed:   1,
-			width:       ptrInt(3),
+			width:       new(3),
 			wantTextLen: 3,
 			wantText:    "╸  ",
 		},
@@ -112,14 +112,14 @@ func TestBarRenderPulse(t *testing.T) {
 		{
 			name:      "explicit width",
 			total:     nil,
-			width:     ptrInt(5),
+			width:     new(5),
 			wantWidth: 5,
 		},
 		{
 			name:      "pulse forced",
-			total:     ptrFloat(100.0),
+			total:     new(100.0),
 			pulse:     true,
-			width:     ptrInt(8),
+			width:     new(8),
 			wantWidth: 8,
 		},
 	}
@@ -159,9 +159,9 @@ func TestBarFinishedStyle(t *testing.T) {
 	c := console.New(console.WithNoColor(true), console.WithForceTerminal(true))
 
 	pb := &ProgressBar{
-		Total:     ptrFloat(10.0),
+		Total:     new(10.0),
 		Completed: 10.0,
-		Width:     ptrInt(5),
+		Width:     new(5),
 		Finished:  true,
 	}
 	segs := pb.Render(c, c.Options())
@@ -191,9 +191,9 @@ func TestBarASCII(t *testing.T) {
 	c := console.New(console.WithNoColor(true), console.WithForceTerminal(true))
 
 	pb := &ProgressBar{
-		Total:     ptrFloat(10.0),
+		Total:     new(10.0),
 		Completed: 5.0,
-		Width:     ptrInt(5),
+		Width:     new(5),
 		ASCIIOnly: true,
 	}
 	segs := pb.Render(c, c.Options())
@@ -236,12 +236,4 @@ func TestBarMeasure(t *testing.T) {
 			t.Errorf("Measure = (%d,%d), want (40,40)", m.Minimum, m.Maximum)
 		}
 	})
-}
-
-func ptrInt(i int) *int {
-	return &i
-}
-
-func ptrFloat(f float64) *float64 {
-	return &f
 }

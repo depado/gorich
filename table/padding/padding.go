@@ -117,10 +117,7 @@ func (p *Padding) contentLines(c *console.Console, opts console.Options) [][]seg
 			w := segment.TotalCellLength(segs)
 			meas = console.NewMeasurement(w, w)
 		}
-		width = meas.Maximum + p.left + p.right
-		if width > opts.MaxWidth {
-			width = opts.MaxWidth
-		}
+		width = min(meas.Maximum+p.left+p.right, opts.MaxWidth)
 		if width < 1 {
 			return nil
 		}

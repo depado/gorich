@@ -131,21 +131,21 @@ func WithPadEdge(pad bool) TableOption {
 // Table implements a console-renderable table with optional borders, headers,
 // footers, and dynamic column width calculation.
 type Table struct {
-	columns     []*Column
-	rows        []Row
-	title       string
-	caption     string
-	tableBox    *box.Box
-	showHeader  bool
-	showFooter  bool
-	showEdge    bool
-	showLines   bool
-	leading     int
-	width       int
-	minWidth    int
-	expand      bool
+	columns         []*Column
+	rows            []Row
+	title           string
+	caption         string
+	tableBox        *box.Box
+	showHeader      bool
+	showFooter      bool
+	showEdge        bool
+	showLines       bool
+	leading         int
+	width           int
+	minWidth        int
+	expand          bool
 	collapsePadding bool
-	padEdge     bool
+	padEdge         bool
 
 	padTop, padRight, padBottom, padLeft int
 
@@ -159,15 +159,15 @@ type Table struct {
 // NewTable creates a new Table with the given column headers.
 func NewTable(headers ...string) *Table {
 	t := &Table{
-		tableBox:    box.HEAVY_HEAD,
-		showHeader:  true,
-		showFooter:  false,
-		showEdge:    true,
-		showLines:   false,
-		padEdge:     true,
-		padRight:    1,
-		padLeft:     1,
-		expand:      false,
+		tableBox:   box.HEAVY_HEAD,
+		showHeader: true,
+		showFooter: false,
+		showEdge:   true,
+		showLines:  false,
+		padEdge:    true,
+		padRight:   1,
+		padLeft:    1,
+		expand:     false,
 	}
 
 	for i, h := range headers {
@@ -196,7 +196,7 @@ func (t *Table) AddColumn(header string, opts ...ColumnOption) *Column {
 }
 
 // AddRow adds a row of values to the table.
-func (t *Table) AddRow(values ...interface{}) {
+func (t *Table) AddRow(values ...any) {
 	cols := t.columns
 	for i, v := range values {
 		if i == len(cols) {
@@ -215,7 +215,7 @@ func (t *Table) AddRow(values ...interface{}) {
 }
 
 // AddStyledRow adds a row with an optional row style.
-func (t *Table) AddStyledRow(values []interface{}, s *style.Style, endSection bool) {
+func (t *Table) AddStyledRow(values []any, s *style.Style, endSection bool) {
 	for i, v := range values {
 		if i == len(t.columns) {
 			col := newColumn("", i)
@@ -239,7 +239,7 @@ func (t *Table) AddSection() {
 	}
 }
 
-func (t *Table) toRenderable(v interface{}) console.Renderable {
+func (t *Table) toRenderable(v any) console.Renderable {
 	if v == nil {
 		return nil
 	}
@@ -277,10 +277,7 @@ func (t *Table) Render(c *console.Console, opts console.Options) []segment.Segme
 	if t.title != "" {
 		titleSegs := markup.Render(t.title)
 		titleWidth := segment.TotalCellLength(titleSegs)
-		titlePad := (tableWidth - titleWidth) / 2
-		if titlePad < 0 {
-			titlePad = 0
-		}
+		titlePad := max((tableWidth-titleWidth)/2, 0)
 		if titlePad > 0 {
 			result = append(result, segment.NewText(spaces(titlePad), nil))
 		}
@@ -294,10 +291,7 @@ func (t *Table) Render(c *console.Console, opts console.Options) []segment.Segme
 	if t.caption != "" {
 		captionSegs := markup.Render(t.caption)
 		captionWidth := segment.TotalCellLength(captionSegs)
-		captionPad := (tableWidth - captionWidth) / 2
-		if captionPad < 0 {
-			captionPad = 0
-		}
+		captionPad := max((tableWidth-captionWidth)/2, 0)
 		if captionPad > 0 {
 			result = append(result, segment.NewText(spaces(captionPad), nil))
 		}

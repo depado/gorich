@@ -182,7 +182,7 @@ func TestSampleRing(t *testing.T) {
 	ring := &sampleRing{}
 
 	// Push some samples
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		ring.push(progressSample{timestamp: float64(i), completed: float64(i * 10)})
 	}
 
@@ -211,7 +211,7 @@ func TestSampleRingOverflow(t *testing.T) {
 	ring := &sampleRing{}
 
 	// Push more than maxSamples
-	for i := 0; i < maxSamples+100; i++ {
+	for i := range maxSamples + 100 {
 		ring.push(progressSample{timestamp: float64(i), completed: float64(i)})
 	}
 

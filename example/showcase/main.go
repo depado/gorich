@@ -52,11 +52,11 @@ func tableDemo() {
 		table.WithTitle("[bold underline]Sales Report[/]"),
 		table.WithBox(box.ROUNDED),
 		table.WithShowFooter(true),
-		table.WithHeaderStyle(stylePtr(style.Parse("bold magenta"))),
-		table.WithFooterStyle(stylePtr(style.Parse("bold cyan"))),
+		table.WithHeaderStyle(new(style.Parse("bold magenta"))),
+		table.WithFooterStyle(new(style.Parse("bold cyan"))),
 		table.WithRowStyles(
-			stylePtr(style.Parse("")),
-			stylePtr(style.Parse("on #222222")),
+			new(style.Parse("")),
+			new(style.Parse("on #222222")),
 		),
 	)
 	colProduct := tbl.AddColumn("Product", table.WithColumnStyle("bold"))
@@ -107,7 +107,7 @@ func progressDemo() {
 	id2 := p.AddTask("[yellow]Processing[/]", &t2)
 	id3 := p.AddTask("[magenta]Uploading[/]", &t3)
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		time.Sleep(25 * time.Millisecond)
 		if i < 50 {
 			p.Advance(id1, 1)
@@ -216,8 +216,4 @@ func blocksDemo() {
 	wg.Wait()
 	time.Sleep(300 * time.Millisecond)
 	l.Stop()
-}
-
-func stylePtr(s style.Style) *style.Style {
-	return &s
 }

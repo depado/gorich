@@ -176,7 +176,7 @@ func (d *BlockDisplay) AppendLines(idx int, s string) {
 	if s == "" {
 		return
 	}
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		d.AppendLine(idx, line)
 	}
 }

@@ -73,7 +73,7 @@ func Parse(markup string) Text {
 		if len(escapes) > 0 {
 			// Add literal backslashes (every 2 escapes = 1 literal backslash)
 			numBackslashes := len(escapes) / 2
-			for i := 0; i < numBackslashes; i++ {
+			for range numBackslashes {
 				plain.WriteString("\\")
 			}
 

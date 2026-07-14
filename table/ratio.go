@@ -67,10 +67,7 @@ func ratioResolve(total int, edges []Edge) []int {
 
 		totalRatio := 0
 		for _, f := range flexible {
-			r := f.edge.Ratio
-			if r < 1 {
-				r = 1
-			}
+			r := max(f.edge.Ratio, 1)
 			totalRatio += r
 		}
 
@@ -78,10 +75,7 @@ func ratioResolve(total int, edges []Edge) []int {
 
 		adjusted := false
 		for _, f := range flexible {
-			r := f.edge.Ratio
-			if r < 1 {
-				r = 1
-			}
+			r := max(f.edge.Ratio, 1)
 			if int(portion*float64(r)) <= f.edge.MinimumSize {
 				v := f.edge.MinimumSize
 				sizes[f.idx] = &v
@@ -95,10 +89,7 @@ func ratioResolve(total int, edges []Edge) []int {
 
 		remainder := 0.0
 		for _, f := range flexible {
-			r := f.edge.Ratio
-			if r < 1 {
-				r = 1
-			}
+			r := max(f.edge.Ratio, 1)
 			size := portion*float64(r) + remainder
 			intSize := int(math.Round(size))
 			remainder = size - float64(intSize)

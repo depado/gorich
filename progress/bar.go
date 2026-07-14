@@ -25,8 +25,8 @@ const (
 
 // Pulse animation constants
 const (
-	pulseSize      = 20   // Width of pulse in characters
-	pulseSpeed     = 15.0 // Characters per second
+	pulseSize  = 20   // Width of pulse in characters
+	pulseSpeed = 15.0 // Characters per second
 )
 
 // ProgressBar renders a single progress bar.
@@ -37,7 +37,7 @@ type ProgressBar struct {
 	Pulse         bool    // Force pulse animation
 	AnimationTime float64 // Time for animation (used for pulse offset)
 	ASCIIOnly     bool
-	Finished      bool    // Task is finished (use finished style)
+	Finished      bool // Task is finished (use finished style)
 
 	BackStyle     *style.Style
 	CompleteStyle *style.Style
@@ -158,7 +158,7 @@ func (pb *ProgressBar) renderPulse(c *console.Console, opts console.Options, wid
 	pulseStart := style.TrueColor(0, 0, 0)
 	pulseEnd := style.TrueColor(128, 0, 255)
 
-	offset := int(pb.AnimationTime * pulseSpeed) % (width + pulseSize)
+	offset := int(pb.AnimationTime*pulseSpeed) % (width + pulseSize)
 
 	char := barFull
 	if pb.ASCIIOnly {
@@ -166,7 +166,7 @@ func (pb *ProgressBar) renderPulse(c *console.Console, opts console.Options, wid
 	}
 
 	factors := make([]float64, width)
-	for i := 0; i < width; i++ {
+	for i := range width {
 		pulseCenter := offset - pulseSize/2
 		dist := float64(i - pulseCenter)
 
@@ -180,20 +180,14 @@ func (pb *ProgressBar) renderPulse(c *console.Console, opts console.Options, wid
 	var segments []segment.Segment
 	i := 0
 	for i < width {
-		band := int(factors[i]*float64(pulseBands-1) + 0.5)
-		if band < 0 {
-			band = 0
-		}
+		band := max(int(factors[i]*float64(pulseBands-1)+0.5), 0)
 		if band >= pulseBands {
 			band = pulseBands - 1
 		}
 
 		j := i + 1
 		for j < width {
-			nextBand := int(factors[j]*float64(pulseBands-1) + 0.5)
-			if nextBand < 0 {
-				nextBand = 0
-			}
+			nextBand := max(int(factors[j]*float64(pulseBands-1)+0.5), 0)
 			if nextBand >= pulseBands {
 				nextBand = pulseBands - 1
 			}

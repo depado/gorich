@@ -30,8 +30,8 @@ func main() {
 		nil,
 		table.WithTitle("[bold underline]Sales Report[/]"),
 		table.WithRowStyles(
-			stylePtr(style.Parse("")),
-			stylePtr(style.Parse("on #222222")),
+			new(style.Parse("")),
+			new(style.Parse("on #222222")),
 		),
 	)
 	tbl2.AddColumn("Product")
@@ -50,8 +50,8 @@ func main() {
 	tbl3 := table.NewTableWithOptions(
 		nil,
 		table.WithShowFooter(true),
-		table.WithHeaderStyle(stylePtr(style.Parse("bold magenta"))),
-		table.WithFooterStyle(stylePtr(style.Parse("bold cyan"))),
+		table.WithHeaderStyle(new(style.Parse("bold magenta"))),
+		table.WithFooterStyle(new(style.Parse("bold cyan"))),
 		table.WithShowLines(),
 	)
 	colTask := tbl3.AddColumn("Task", table.WithColumnStyle("bold"))
@@ -157,7 +157,7 @@ func main() {
 		bt := table.NewTableWithOptions(
 			nil,
 			table.WithBox(bs.b),
-			table.WithTitle("[bold dim]box." + bs.name + "[/]"),
+			table.WithTitle("[bold dim]box."+bs.name+"[/]"),
 		)
 		bt.AddColumn("Property", table.WithColumnStyle("cyan"))
 		bt.AddColumn("Value", table.WithColumnStyle("green"))
@@ -165,8 +165,4 @@ func main() {
 		bt.AddRow("Border", "[dim]rendered[/]")
 		c.Render(bt)
 	}
-}
-
-func stylePtr(s style.Style) *style.Style {
-	return &s
 }

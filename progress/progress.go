@@ -2,6 +2,7 @@ package progress
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -269,10 +270,8 @@ func (p *Progress) RemoveTask(taskID TaskID) {
 
 func (p *Progress) sectionForTask(taskID TaskID) *Section {
 	for _, section := range p.sections {
-		for _, id := range section.taskOrder {
-			if id == taskID {
-				return section
-			}
+		if slices.Contains(section.taskOrder, taskID) {
+			return section
 		}
 	}
 	return nil

@@ -22,11 +22,11 @@ func NewText(text string, s *style.Style) Segment {
 
 // NewControl creates a control segment.
 func NewControlSegment(codes ...ControlCode) Segment {
-	text := ""
+	var text strings.Builder
 	for _, c := range codes {
-		text += c.Render()
+		text.WriteString(c.Render())
 	}
-	return Segment{Text: text, Control: codes}
+	return Segment{Text: text.String(), Control: codes}
 }
 
 // IsControl returns true if this is a control segment.

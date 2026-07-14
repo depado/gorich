@@ -48,7 +48,7 @@ func simpleExample() {
 	total := 100.0
 	task := p.AddTask("[green]Processing[/]", &total)
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		time.Sleep(20 * time.Millisecond)
 		p.Advance(task, 1)
 	}
@@ -72,7 +72,7 @@ func multipleTasksExample() {
 	task3 := p.AddTask("[magenta]Cooking[/]", &total3)
 
 	// Simulate concurrent work
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		time.Sleep(30 * time.Millisecond)
 
 		if i < 50 {

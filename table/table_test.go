@@ -131,7 +131,7 @@ func TestTableAddRowNonStringValues(t *testing.T) {
 func TestTableAddStyledRowNonStringValues(t *testing.T) {
 	c := console.New(console.WithWidth(80), console.WithNoColor(true), console.WithForceTerminal(true))
 	tbl := NewTable("Col1")
-	tbl.AddStyledRow([]interface{}{true, 100}, nil, false)
+	tbl.AddStyledRow([]any{true, 100}, nil, false)
 
 	result := tbl.Render(c, c.Options())
 	var output strings.Builder
