@@ -81,8 +81,8 @@ type Task struct {
 	finishedSpeed  *float64 // Speed when finished
 	samples        sampleRing
 	getTime        func() float64
-	speedPeriod    float64 // Speed estimation window in seconds
-	pausedTime     float64 // cumulative time spent in paused state
+	speedPeriod    float64  // Speed estimation window in seconds
+	pausedTime     float64  // cumulative time spent in paused state
 	pauseStartTime *float64 // when the current pause started, nil if not paused
 }
 
@@ -151,7 +151,7 @@ func (t *Task) Snapshot() TaskSnapshot {
 
 	// Percentage
 	if t.total != nil && *t.total > 0 {
-		snap.Percentage = math.Min(100.0, (t.completed / *t.total) * 100.0)
+		snap.Percentage = math.Min(100.0, (t.completed / *t.total)*100.0)
 	}
 
 	// Finished state - either finishedTime is set, or completed >= total

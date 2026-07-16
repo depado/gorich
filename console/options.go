@@ -27,9 +27,9 @@ type Options struct {
 type Overflow int
 
 const (
-	OverflowFold    Overflow = iota // Wrap at width
-	OverflowCrop                    // Truncate at width
-	OverflowEllipsis                // Truncate with ellipsis
+	OverflowFold     Overflow = iota // Wrap at width
+	OverflowCrop                     // Truncate at width
+	OverflowEllipsis                 // Truncate with ellipsis
 )
 
 // Justify determines text justification.

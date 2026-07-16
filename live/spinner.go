@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/depado/gorich/console"
+	"github.com/depado/gorich/markup"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/spinner"
 	"github.com/depado/gorich/style"
@@ -113,19 +114,16 @@ func (a *ActiveSpinner) Render(c *console.Console, opts console.Options) []segme
 	case stateStopped:
 		return nil
 	case stateSuccess:
-		return []segment.Segment{
-			segment.NewText("✓", &style.Green),
-			segment.NewText(" "+text, nil),
-		}
+		segs := []segment.Segment{segment.NewText("✓", &style.Green), segment.NewText(" ", nil)}
+		return append(segs, markup.Render(text)...)
 	case stateFailure:
-		return []segment.Segment{
-			segment.NewText("✗", &style.Red),
-			segment.NewText(" "+text, nil),
-		}
+		segs := []segment.Segment{segment.NewText("✗", &style.Red), segment.NewText(" ", nil)}
+		return append(segs, markup.Render(text)...)
 	default:
 		now := float64(time.Now().UnixNano()) / 1e9
 		segs := spin.Render(now)
-		segs = append(segs, segment.NewText(" "+text, nil))
+		segs = append(segs, segment.NewText(" ", nil))
+		segs = append(segs, markup.Render(text)...)
 		return segs
 	}
 }

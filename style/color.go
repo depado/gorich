@@ -21,16 +21,16 @@ const (
 type ColorType int
 
 const (
-	ColorTypeDefault  ColorType = iota // Default terminal color
-	ColorTypeStandard                  // Standard 16 colors (0-15)
-	ColorType256                       // 256 color palette (0-255)
-	ColorTypeTrueColor                 // 24-bit RGB
+	ColorTypeDefault   ColorType = iota // Default terminal color
+	ColorTypeStandard                   // Standard 16 colors (0-15)
+	ColorType256                        // 256 color palette (0-255)
+	ColorTypeTrueColor                  // 24-bit RGB
 )
 
 // Color represents a terminal color.
 type Color struct {
-	typ    ColorType
-	number int   // For standard/256 colors
+	typ     ColorType
+	number  int   // For standard/256 colors
 	r, g, b uint8 // For truecolor
 }
 
@@ -160,24 +160,24 @@ func blendByte(a, b uint8, factor float64) uint8 {
 
 // Standard ANSI color names to numbers
 var standardColorNames = map[string]int{
-	"black":         0,
-	"red":           1,
-	"green":         2,
-	"yellow":        3,
-	"blue":          4,
-	"magenta":       5,
-	"cyan":          6,
-	"white":         7,
-	"bright_black":  8,
-	"bright_red":    9,
-	"bright_green":  10,
-	"bright_yellow": 11,
-	"bright_blue":   12,
+	"black":          0,
+	"red":            1,
+	"green":          2,
+	"yellow":         3,
+	"blue":           4,
+	"magenta":        5,
+	"cyan":           6,
+	"white":          7,
+	"bright_black":   8,
+	"bright_red":     9,
+	"bright_green":   10,
+	"bright_yellow":  11,
+	"bright_blue":    12,
 	"bright_magenta": 13,
-	"bright_cyan":   14,
-	"bright_white":  15,
-	"grey0":         16,
-	"gray0":         16,
+	"bright_cyan":    14,
+	"bright_white":   15,
+	"grey0":          16,
+	"gray0":          16,
 }
 
 // ParseColor parses a color from a string.
@@ -311,7 +311,7 @@ func color256ToRGB(n int) (r, g, b uint8) {
 		return r, g, b
 	}
 	// Grayscale: 232-255 -> 24 shades from dark to light
-	gray := uint8((n - 232) * 10 + 8)
+	gray := uint8((n-232)*10 + 8)
 	return gray, gray, gray
 }
 
@@ -327,9 +327,9 @@ func rgbTo256(r, g, b uint8) int {
 		return int((r-8)/10) + 232
 	}
 	// Map to 6x6x6 color cube
-	ri := int((float64(r) / 255.0) * 5.0 + 0.5)
-	gi := int((float64(g) / 255.0) * 5.0 + 0.5)
-	bi := int((float64(b) / 255.0) * 5.0 + 0.5)
+	ri := int((float64(r)/255.0)*5.0 + 0.5)
+	gi := int((float64(g)/255.0)*5.0 + 0.5)
+	bi := int((float64(b)/255.0)*5.0 + 0.5)
 	return 16 + 36*ri + 6*gi + bi
 }
 

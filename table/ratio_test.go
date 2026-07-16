@@ -90,33 +90,33 @@ func TestRatioResolve(t *testing.T) {
 
 func TestRatioDistribute(t *testing.T) {
 	tests := []struct {
-		name      string
-		total     int
-		ratios    []int
-		minimums  []int
-		want      []int
-		wantSum   int
+		name     string
+		total    int
+		ratios   []int
+		minimums []int
+		want     []int
+		wantSum  int
 	}{
 		{
-			name:     "equal distribution",
-			total:    100,
-			ratios:   []int{1, 1},
-			want:     []int{50, 50},
-			wantSum:  100,
+			name:    "equal distribution",
+			total:   100,
+			ratios:  []int{1, 1},
+			want:    []int{50, 50},
+			wantSum: 100,
 		},
 		{
-			name:     "ratio 3:1",
-			total:    100,
-			ratios:   []int{3, 1},
-			want:     []int{75, 25},
-			wantSum:  100,
+			name:    "ratio 3:1",
+			total:   100,
+			ratios:  []int{3, 1},
+			want:    []int{75, 25},
+			wantSum: 100,
 		},
 		{
-			name:     "ratio 2:1:1",
-			total:    100,
-			ratios:   []int{2, 1, 1},
-			want:     []int{50, 25, 25},
-			wantSum:  100,
+			name:    "ratio 2:1:1",
+			total:   100,
+			ratios:  []int{2, 1, 1},
+			want:    []int{50, 25, 25},
+			wantSum: 100,
 		},
 		{
 			name:     "with minimums",
@@ -164,12 +164,12 @@ func TestRatioDistribute(t *testing.T) {
 
 func TestRatioReduce(t *testing.T) {
 	tests := []struct {
-		name      string
-		total     int
-		ratios    []int
-		maximums  []int
-		values    []int
-		want      []int
+		name     string
+		total    int
+		ratios   []int
+		maximums []int
+		values   []int
+		want     []int
 	}{
 		{
 			name:     "basic reduction",

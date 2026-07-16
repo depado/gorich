@@ -10,9 +10,9 @@ import (
 type VerticalOverflow int
 
 const (
-	OverflowVisible VerticalOverflow = iota // Show all content
-	OverflowCrop                            // Crop to terminal height
-	OverflowEllipsis                        // Show ellipsis for cropped content
+	OverflowVisible  VerticalOverflow = iota // Show all content
+	OverflowCrop                             // Crop to terminal height
+	OverflowEllipsis                         // Show ellipsis for cropped content
 )
 
 // LiveRender tracks the rendered state and handles cursor repositioning.

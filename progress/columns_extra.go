@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/depado/gorich/console"
+	"github.com/depado/gorich/markup"
 	"github.com/depado/gorich/segment"
 	"github.com/depado/gorich/spinner"
 	"github.com/depado/gorich/style"
@@ -79,13 +80,19 @@ func WithFinishedText(text string) func(*SpinnerColumn) {
 // Render implements Column.
 func (sc *SpinnerColumn) Render(task TaskSnapshot, c *console.Console, opts console.Options) []segment.Segment {
 	if task.Finished {
-		s := style.Green
+		fallback := style.Green
 		if sc.FinishedStyle != nil {
-			s = *sc.FinishedStyle
+			fallback = *sc.FinishedStyle
 		} else if sc.Style != nil {
-			s = *sc.Style
+			fallback = *sc.Style
 		}
-		return []segment.Segment{segment.NewText(sc.FinishedText, &s)}
+		segs := markup.Render(sc.FinishedText)
+		for i := range segs {
+			if segs[i].Style == nil {
+				segs[i].Style = &fallback
+			}
+		}
+		return segs
 	}
 
 	sc.mu.Lock()

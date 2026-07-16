@@ -10,7 +10,6 @@ import (
 	"github.com/depado/gorich/style"
 )
 
-
 func resolveStyle(defaultStyle *style.Style, override *style.Style) *style.Style {
 	if override != nil {
 		return override
@@ -29,7 +28,7 @@ type Column interface {
 
 // TextColumn displays text with optional formatting.
 type TextColumn struct {
-	Text       string       // Text to display (can use {task.description}, etc.)
+	Text       string // Text to display (can use {task.description}, etc.)
 	Style      *style.Style
 	Justify    console.Justify
 	Width      int  // Minimum width (0 = no padding)
@@ -285,10 +284,10 @@ func (tpc *TaskProgressColumn) MaxRefresh() time.Duration {
 
 // TimeRemainingColumn displays the estimated time remaining.
 type TimeRemainingColumn struct {
-	Compact            bool   // Use compact format (MM:SS)
-	ElapsedWhenFinished bool  // Show elapsed time when finished
-	Style              *style.Style
-	maxRefresh         time.Duration
+	Compact             bool // Use compact format (MM:SS)
+	ElapsedWhenFinished bool // Show elapsed time when finished
+	Style               *style.Style
+	maxRefresh          time.Duration
 }
 
 // NewTimeRemainingColumn creates a new time remaining column.

@@ -20,40 +20,40 @@ import (
 //	│ ││  foot
 //	└─┴┘  bottom
 type Box struct {
-	raw            string
-	ascii          bool
-	topLeft        rune
-	top            rune
-	topDivider     rune
-	topRight       rune
-	headLeft       rune
-	headSpace      rune
-	headVertical   rune
-	headRight      rune
-	headRowLeft    rune
-	headRowH       rune
-	headRowCross   rune
-	headRowRight   rune
-	midLeft        rune
-	midSpace       rune
-	midVertical    rune
-	midRight       rune
-	rowLeft        rune
-	rowH           rune
-	rowCross       rune
-	rowRight       rune
-	footRowLeft    rune
-	footRowH       rune
-	footRowCross   rune
-	footRowRight   rune
-	footLeft       rune
-	footSpace      rune
-	footVertical   rune
-	footRight      rune
-	bottomLeft     rune
-	bottom         rune
-	bottomDivider  rune
-	bottomRight    rune
+	raw           string
+	ascii         bool
+	topLeft       rune
+	top           rune
+	topDivider    rune
+	topRight      rune
+	headLeft      rune
+	headSpace     rune
+	headVertical  rune
+	headRight     rune
+	headRowLeft   rune
+	headRowH      rune
+	headRowCross  rune
+	headRowRight  rune
+	midLeft       rune
+	midSpace      rune
+	midVertical   rune
+	midRight      rune
+	rowLeft       rune
+	rowH          rune
+	rowCross      rune
+	rowRight      rune
+	footRowLeft   rune
+	footRowH      rune
+	footRowCross  rune
+	footRowRight  rune
+	footLeft      rune
+	footSpace     rune
+	footVertical  rune
+	footRight     rune
+	bottomLeft    rune
+	bottom        rune
+	bottomDivider rune
+	bottomRight   rune
 }
 
 // NewBox creates a Box from an 8-line string of box characters.
@@ -453,9 +453,9 @@ var (
 )
 
 var plainHeadedSubstitutions = map[*Box]*Box{
-	HEAVY_HEAD:           SQUARE,
-	SQUARE_DOUBLE_HEAD:   SQUARE,
-	MINIMAL_DOUBLE_HEAD:  MINIMAL,
-	MINIMAL_HEAVY_HEAD:   MINIMAL,
-	ASCII_DOUBLE_HEAD:    ASCII2,
+	HEAVY_HEAD:          SQUARE,
+	SQUARE_DOUBLE_HEAD:  SQUARE,
+	MINIMAL_DOUBLE_HEAD: MINIMAL,
+	MINIMAL_HEAVY_HEAD:  MINIMAL,
+	ASCII_DOUBLE_HEAD:   ASCII2,
 }
