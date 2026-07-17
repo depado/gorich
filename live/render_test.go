@@ -8,7 +8,7 @@ import (
 )
 
 func TestLiveRenderPositionCursor(t *testing.T) {
-	lr := NewLiveRender(nil, OverflowVisible)
+	lr := newLiveRender(nil, OverflowVisible)
 
 	ctrl := lr.PositionCursor()
 	if len(ctrl.Codes) != 0 {
@@ -23,7 +23,7 @@ func TestLiveRenderPositionCursor(t *testing.T) {
 }
 
 func TestLiveRenderRestoreCursor(t *testing.T) {
-	lr := NewLiveRender(nil, OverflowVisible)
+	lr := newLiveRender(nil, OverflowVisible)
 
 	ctrl := lr.RestoreCursor()
 	if len(ctrl.Codes) != 0 {
@@ -38,7 +38,7 @@ func TestLiveRenderRestoreCursor(t *testing.T) {
 }
 
 func TestLiveRenderReset(t *testing.T) {
-	lr := NewLiveRender(nil, OverflowVisible)
+	lr := newLiveRender(nil, OverflowVisible)
 	lr.lastHeight = 42
 	lr.lastWidth = 80
 	lr.Reset()
@@ -48,7 +48,7 @@ func TestLiveRenderReset(t *testing.T) {
 }
 
 func TestLiveRenderShape(t *testing.T) {
-	lr := NewLiveRender(nil, OverflowVisible)
+	lr := newLiveRender(nil, OverflowVisible)
 	w, h := lr.Shape()
 	if w != 0 || h != 0 {
 		t.Error("Shape() should return zeros for unrendered LiveRender")
@@ -56,7 +56,7 @@ func TestLiveRenderShape(t *testing.T) {
 }
 
 func TestLiveRenderSetRenderable(t *testing.T) {
-	lr := NewLiveRender(nil, OverflowVisible)
+	lr := newLiveRender(nil, OverflowVisible)
 	lr.SetRenderable(&dummyRenderable{})
 	if lr.renderable == nil {
 		t.Error("SetRenderable should set the renderable")

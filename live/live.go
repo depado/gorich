@@ -10,13 +10,21 @@ import (
 	"github.com/depado/gorich/segment"
 )
 
+var _ console.RenderHook = (*Live)(nil)
+
+// Ejectable is implemented by renderables that can commit overflow content
+// to the terminal's scrollback buffer during a Live display.
+type Ejectable interface {
+	PopEjects(width int, maxHeight int) []segment.Segment
+}
+
 // Live provides an auto-refreshing terminal display.
 type Live struct {
 	mu            sync.Mutex
 	console       *console.Console
 	renderable    console.Renderable
 	getRenderable func() console.Renderable // Optional callback to get renderable
-	liveRender    *LiveRender
+	liveRender    *liveRender
 	started       bool
 	transient     bool
 	autoRefresh   bool
@@ -52,13 +60,6 @@ func WithRefreshRate(rate float64) Option {
 	}
 }
 
-// WithVerticalOverflow sets how vertical overflow is handled.
-func WithVerticalOverflow(overflow VerticalOverflow) Option {
-	return func(l *Live) {
-		l.vertOverflow = overflow
-	}
-}
-
 // WithGetRenderable sets a callback to get the renderable on each refresh.
 func WithGetRenderable(fn func() console.Renderable) Option {
 	return func(l *Live) {
@@ -80,7 +81,7 @@ func New(c *console.Console, renderable console.Renderable, opts ...Option) *Liv
 		opt(l)
 	}
 
-	l.liveRender = NewLiveRender(renderable, l.vertOverflow)
+	l.liveRender = newLiveRender(renderable, l.vertOverflow)
 
 	return l
 }
@@ -191,10 +192,7 @@ func (l *Live) refresh() {
 	// Check if the renderable has content to eject to the scrollback buffer
 	// before the live area is repainted. Ejected content is written outside
 	// the sync frame so it survives into the scrollback.
-	type ejectable interface {
-		PopEjects(width int, maxHeight int) []segment.Segment
-	}
-	if ej, ok := renderable.(ejectable); ok {
+	if ej, ok := renderable.(Ejectable); ok {
 		ejected := ej.PopEjects(opts.Size.Width, opts.Size.Height)
 		if len(ejected) > 0 {
 			// Clear the old live area so ejected content overwrites it
@@ -301,8 +299,8 @@ func (l *Live) ProcessRenderables(renderables []console.Renderable) []console.Re
 	return result
 }
 
-// IsStarted returns whether the live display is running.
-func (l *Live) IsStarted() bool {
+// isStarted returns whether the live display is running.
+func (l *Live) isStarted() bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.started

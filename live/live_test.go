@@ -18,12 +18,12 @@ func TestLiveStartStop(t *testing.T) {
 	ctx := context.Background()
 	l.Start(ctx)
 
-	if !l.IsStarted() {
+	if !l.isStarted() {
 		t.Error("expected started after Start()")
 	}
 
 	l.Stop()
-	if l.IsStarted() {
+	if l.isStarted() {
 		t.Error("expected not started after Stop()")
 	}
 }

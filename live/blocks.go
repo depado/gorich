@@ -571,3 +571,4 @@ func defaultOutputStyle(b *Block) *style.Style {
 }
 
 var _ io.Writer = (*BlockWriter)(nil)
+var _ console.Renderable = (*BlockDisplay)(nil)

@@ -6,6 +6,8 @@ import (
 	"github.com/depado/gorich/segment"
 )
 
+var _ console.Renderable = (*liveRender)(nil)
+
 // VerticalOverflow determines how vertical overflow is handled.
 type VerticalOverflow int
 
@@ -15,43 +17,43 @@ const (
 	OverflowEllipsis                         // Show ellipsis for cropped content
 )
 
-// LiveRender tracks the rendered state and handles cursor repositioning.
-type LiveRender struct {
+// liveRender tracks the rendered state and handles cursor repositioning.
+type liveRender struct {
 	renderable   console.Renderable
 	lastHeight   int
 	lastWidth    int
 	vertOverflow VerticalOverflow
 }
 
-// NewLiveRender creates a new LiveRender.
-func NewLiveRender(renderable console.Renderable, overflow VerticalOverflow) *LiveRender {
-	return &LiveRender{
+// newLiveRender creates a new liveRender.
+func newLiveRender(renderable console.Renderable, overflow VerticalOverflow) *liveRender {
+	return &liveRender{
 		renderable:   renderable,
 		vertOverflow: overflow,
 	}
 }
 
 // SetRenderable updates the renderable to display.
-func (lr *LiveRender) SetRenderable(r console.Renderable) {
+func (lr *liveRender) SetRenderable(r console.Renderable) {
 	lr.renderable = r
 }
 
 // Reset clears the last rendered shape so the next PositionCursor is a no-op.
 // Use after content was committed to scrollback and the live area needs a
 // fresh start with no old content to erase.
-func (lr *LiveRender) Reset() {
+func (lr *liveRender) Reset() {
 	lr.lastHeight = 0
 	lr.lastWidth = 0
 }
 
 // Shape returns the last rendered shape (width, height).
-func (lr *LiveRender) Shape() (width, height int) {
+func (lr *liveRender) Shape() (width, height int) {
 	return lr.lastWidth, lr.lastHeight
 }
 
 // PositionCursor returns a Control that moves the cursor back to the start
 // of the previously rendered content, erasing it in the process.
-func (lr *LiveRender) PositionCursor() segment.Control {
+func (lr *liveRender) PositionCursor() segment.Control {
 	if lr.lastHeight == 0 {
 		return segment.Control{}
 	}
@@ -66,7 +68,7 @@ func (lr *LiveRender) PositionCursor() segment.Control {
 
 // RestoreCursor returns a Control that moves the cursor to erase all content
 // and returns to the original position. Used for transient mode.
-func (lr *LiveRender) RestoreCursor() segment.Control {
+func (lr *liveRender) RestoreCursor() segment.Control {
 	if lr.lastHeight == 0 {
 		return segment.Control{}
 	}
@@ -81,7 +83,7 @@ func (lr *LiveRender) RestoreCursor() segment.Control {
 }
 
 // Render implements console.Renderable.
-func (lr *LiveRender) Render(c *console.Console, opts console.Options) []segment.Segment {
+func (lr *liveRender) Render(c *console.Console, opts console.Options) []segment.Segment {
 	if lr.renderable == nil {
 		lr.lastHeight = 0
 		lr.lastWidth = 0

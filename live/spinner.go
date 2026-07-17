@@ -12,6 +12,8 @@ import (
 	"github.com/depado/gorich/style"
 )
 
+var _ console.Renderable = (*ActiveSpinner)(nil)
+
 type activeState int
 
 const (
