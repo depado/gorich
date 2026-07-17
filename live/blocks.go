@@ -392,19 +392,31 @@ func (d *BlockDisplay) flattenLines(lines [][]segment.Segment, width int) []segm
 	return result
 }
 
-func (d *BlockDisplay) renderFullBlockLocked(blk *Block, width int) []segment.Segment {
+// renderBlockLines renders a single block into lines. When live is true,
+// reserveSpace padding and collapseDisplayed tracking are applied.
+func (d *BlockDisplay) renderBlockLines(blk *Block, now float64, live bool) [][]segment.Segment {
 	var lines [][]segment.Segment
-	now := nowSeconds()
 	header := renderBlockHeader(blk, now)
-
-	if d.collapseOnFinish {
-		header = d.appendLastLineLocked(header, blk)
-		lines = append(lines, header)
-	} else {
+	if !d.collapseOnFinish || blk.Status == BlockRunning {
 		lines = append(lines, header)
 		lines = append(lines, d.appendOutputLines(blk)...)
+		if live && d.reserveSpace {
+			for j := len(blk.Lines); j < blk.maxLines; j++ {
+				lines = append(lines, []segment.Segment{})
+			}
+		}
+	} else {
+		header = d.appendLastLineLocked(header, blk)
+		if live {
+			blk.collapseDisplayed = true
+		}
+		lines = append(lines, header)
 	}
-	return d.flattenLines(lines, width)
+	return lines
+}
+
+func (d *BlockDisplay) renderFullBlockLocked(blk *Block, width int) []segment.Segment {
+	return d.flattenLines(d.renderBlockLines(blk, nowSeconds(), false), width)
 }
 
 // AppendLines is a convenience helper wrapping AppendLine for a multi-line
@@ -476,24 +488,7 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 		if blk.ejected {
 			continue
 		}
-		// Header
-		header := renderBlockHeader(blk, now)
-
-		// Output lines (ring buffer capped at maxLines). Collapse finished
-		// blocks to just the header when collapseOnFinish is set.
-		if !d.collapseOnFinish || blk.Status == BlockRunning {
-			lines = append(lines, header)
-			lines = append(lines, d.appendOutputLines(blk)...)
-			if d.reserveSpace {
-				for j := len(blk.Lines); j < blk.maxLines; j++ {
-					lines = append(lines, []segment.Segment{})
-				}
-			}
-		} else {
-			header = d.appendLastLineLocked(header, blk)
-			blk.collapseDisplayed = true
-			lines = append(lines, header)
-		}
+		lines = append(lines, d.renderBlockLines(blk, now, true)...)
 	}
 
 	// Crop to terminal height: keep the bottom N lines so old blocks scroll off.
