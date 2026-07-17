@@ -132,7 +132,7 @@ func (a *ActiveSpinner) Render(c *console.Console, opts console.Options) []segme
 		segs := []segment.Segment{segment.NewText("✗", &style.Red), segment.NewText(" ", nil)}
 		return append(segs, markup.Render(text)...)
 	default:
-		now := float64(time.Now().UnixNano()) / 1e9
+		now := nowSeconds()
 		segs := spin.Render(now)
 		segs = append(segs, segment.NewText(" ", nil))
 		segs = append(segs, markup.Render(text)...)

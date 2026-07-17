@@ -15,7 +15,7 @@ var _ console.RenderHook = (*Live)(nil)
 // Ejectable is implemented by renderables that can commit overflow content
 // to the terminal's scrollback buffer during a Live display.
 type Ejectable interface {
-	PopEjects(width int, maxHeight int) []segment.Segment
+	EjectOverflow(width int, maxHeight int) []segment.Segment
 }
 
 // Live provides an auto-refreshing terminal display.
@@ -193,7 +193,7 @@ func (l *Live) refresh() {
 	// before the live area is repainted. Ejected content is written outside
 	// the sync frame so it survives into the scrollback.
 	if ej, ok := renderable.(Ejectable); ok {
-		ejected := ej.PopEjects(opts.Size.Width, opts.Size.Height)
+		ejected := ej.EjectOverflow(opts.Size.Width, opts.Size.Height)
 		if len(ejected) > 0 {
 			// Clear the old live area so ejected content overwrites it
 			clearCtrl := l.liveRender.PositionCursor()
