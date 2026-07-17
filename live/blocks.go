@@ -57,7 +57,13 @@ type Block struct {
 	spinner *spinner.Spinner
 	start   time.Time
 
-	ejected bool
+	ejected bool // removed from live display
+
+	// Internal: set by Render when a finished block is displayed as
+	// collapsed, cleared by PopEjects after rendering the scrollback
+	// commit. Ensures finished blocks are visible at least once before
+	// being ejected.
+	collapseDisplayed bool
 }
 
 // BlockDisplay is a [console.Renderable] that shows a growing list of blocks
@@ -70,13 +76,15 @@ type Block struct {
 // Finish to set its final status + elapsed time. A BlockDisplay is safe for
 // concurrent use: Start/AppendLine/Finish may be called from any goroutine.
 type BlockDisplay struct {
-	mu              sync.Mutex
-	blocks          []*Block
-	defaultMax      int
-	spinnerName     string
-	reserveSpace    bool
-	prefix          string
-	truncateEllipsis bool
+	mu               sync.Mutex
+	blocks           []*Block
+	defaultMax       int
+	spinnerName      string
+	reserveSpace     bool
+	prefix           string
+	truncateEllipsis  bool
+	collapseOnFinish  bool
+	collapseLastLine  bool
 }
 
 // BlockDisplayOption configures a BlockDisplay.
@@ -111,6 +119,19 @@ func WithBlockEllipsis(enable bool) BlockDisplayOption {
 	return func(b *BlockDisplay) { b.truncateEllipsis = enable }
 }
 
+// WithBlockCollapseOnFinish collapses finished blocks to a single header line
+// in the live display (output lines are hidden), saving vertical space. The
+// full output is still rendered when the block is ejected to the scrollback.
+func WithBlockCollapseOnFinish(enable bool) BlockDisplayOption {
+	return func(b *BlockDisplay) { b.collapseOnFinish = enable }
+}
+
+// WithBlockCollapseLastLine appends the last output line to the header when
+// a block is collapsed (requires WithBlockCollapseOnFinish to be enabled).
+func WithBlockCollapseLastLine(enable bool) BlockDisplayOption {
+	return func(b *BlockDisplay) { b.collapseLastLine = enable }
+}
+
 // NewBlockDisplay creates a BlockDisplay.
 func NewBlockDisplay(opts ...BlockDisplayOption) *BlockDisplay {
 	b := &BlockDisplay{
@@ -138,8 +159,9 @@ func (d *BlockDisplay) Start(title string) int {
 	}
 	d.mu.Lock()
 	d.blocks = append(d.blocks, blk)
+	idx := len(d.blocks) - 1
 	d.mu.Unlock()
-	return len(d.blocks) - 1
+	return idx
 }
 
 // AppendLine adds an output line to block idx, trimming the ring buffer to
@@ -178,13 +200,14 @@ func (d *BlockDisplay) Finish(idx int, exitCode int) {
 	}
 }
 
-// PopEjects returns the rendered content of finished, non-ejected blocks
-// that should be committed to the scrollback buffer. Ejection only happens
-// when the live display would exceed maxHeight rows — if everything fits,
-// finished blocks stay visible in the live area.
+// PopEjects returns the rendered content of finished blocks that should be
+// committed to the scrollback buffer. Blocks are only committed when the live
+// display would exceed maxHeight rows — if everything fits, finished blocks
+// stay visible in the live area.
 //
-// After this call the ejected blocks are marked as ejected and will no
-// longer appear in Render().
+// When collapseOnFinish is enabled, finished blocks count as one line each
+// for the overflow check (instead of header + output). They are ejected once
+// they have been displayed as collapsed for at least one frame.
 func (d *BlockDisplay) PopEjects(width int, maxHeight int) []segment.Segment {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -193,13 +216,17 @@ func (d *BlockDisplay) PopEjects(width int, maxHeight int) []segment.Segment {
 		return nil
 	}
 
-	totalLines := d.countLinesLocked()
-	if totalLines <= maxHeight {
+	var total int
+	if d.collapseOnFinish {
+		total = d.countBlocksLocked()
+	} else {
+		total = d.countLinesLocked()
+	}
+	if total <= maxHeight {
 		return nil
 	}
 
-	// Eject oldest finished blocks until the remaining content fits.
-	linesToRemove := totalLines - maxHeight
+	linesToRemove := total - maxHeight
 
 	var segs []segment.Segment
 	removed := 0
@@ -207,19 +234,18 @@ func (d *BlockDisplay) PopEjects(width int, maxHeight int) []segment.Segment {
 		if blk.ejected || blk.Status == BlockRunning {
 			continue
 		}
-		blkLines := 1 // header
-		if d.reserveSpace {
-			blkLines += blk.maxLines
-		} else {
-			blkLines += len(blk.Lines)
+		if d.collapseOnFinish && !blk.collapseDisplayed {
+			continue
 		}
+		unit := d.linesPerBlockLocked(blk)
 
 		if len(segs) > 0 {
 			segs = append(segs, segment.Segment{Text: "\n"})
 		}
 		segs = append(segs, d.renderFullBlockLocked(blk, width)...)
 		blk.ejected = true
-		removed += blkLines
+		blk.collapseDisplayed = false
+		removed += unit
 		if removed >= linesToRemove {
 			break
 		}
@@ -230,31 +256,48 @@ func (d *BlockDisplay) PopEjects(width int, maxHeight int) []segment.Segment {
 	return segs
 }
 
+func (d *BlockDisplay) countBlocksLocked() int {
+	n := 0
+	for _, blk := range d.blocks {
+		if !blk.ejected {
+			n++
+		}
+	}
+	return n
+}
+
 func (d *BlockDisplay) countLinesLocked() int {
 	total := 0
 	for _, blk := range d.blocks {
 		if blk.ejected {
 			continue
 		}
-		total++ // header
-		if d.reserveSpace {
-			// ReserveSpace pads each block to maxLines with blanks.
-			outputLines := len(blk.Lines)
-			if outputLines < blk.maxLines {
-				outputLines = blk.maxLines
-			}
-			total += outputLines
-		} else {
-			total += len(blk.Lines)
-		}
+		total += d.linesPerBlockLocked(blk)
 	}
 	return total
 }
 
-func (d *BlockDisplay) renderFullBlockLocked(blk *Block, width int) []segment.Segment {
+func (d *BlockDisplay) linesPerBlockLocked(blk *Block) int {
+	if d.collapseOnFinish && blk.Status != BlockRunning {
+		return 1 // header only
+	}
+	lines := 1 // header
+	if d.reserveSpace {
+		outputLines := len(blk.Lines)
+		if outputLines < blk.maxLines {
+			outputLines = blk.maxLines
+		}
+		lines += outputLines
+	} else {
+		lines += len(blk.Lines)
+	}
+	return lines
+}
+
+// appendOutputLines renders a block's output lines, applying the block's
+// output style and the display prefix. Returns the new lines to append.
+func (d *BlockDisplay) appendOutputLines(blk *Block) [][]segment.Segment {
 	var lines [][]segment.Segment
-	now := float64(time.Now().UnixNano()) / 1e9
-	lines = append(lines, renderBlockHeader(blk, now))
 	prefixSegs := markup.Render(d.prefix)
 	fallback := defaultOutputStyle(blk)
 	for i := range prefixSegs {
@@ -274,23 +317,65 @@ func (d *BlockDisplay) renderFullBlockLocked(blk *Block, width int) []segment.Se
 		row = append(row, lineSegs...)
 		lines = append(lines, row)
 	}
+	return lines
+}
+
+// truncateLine truncates a line of segments to width, optionally appending
+// an ellipsis when the content is too long.
+func (d *BlockDisplay) truncateLine(line []segment.Segment, width int) []segment.Segment {
+	if width <= 0 {
+		return line
+	}
+	if d.truncateEllipsis && segment.TotalCellLength(line) > width {
+		line = segment.AdjustLineLength(line, width-1, false)
+		lastStyle := segment.LastStyle(line)
+		return append(line, segment.Segment{Text: "…", Style: lastStyle})
+	}
+	return segment.AdjustLineLength(line, width, false)
+}
+
+// appendLastLineLocked appends the block's last output line to header when
+// collapseLastLine is enabled. Caller must hold d.mu.
+func (d *BlockDisplay) appendLastLineLocked(header *[]segment.Segment, blk *Block) {
+	if !d.collapseLastLine || len(blk.Lines) == 0 {
+		return
+	}
+	lastSegs := markup.Render(blk.Lines[len(blk.Lines)-1])
+	outStyle := defaultOutputStyle(blk)
+	*header = append(*header, segment.Segment{Text: " — ", Style: outStyle})
+	for i := range lastSegs {
+		if lastSegs[i].Style == nil {
+			lastSegs[i].Style = outStyle
+		}
+		*header = append(*header, lastSegs[i])
+	}
+}
+
+// flattenLines joins lines with newlines and truncates each to width.
+func (d *BlockDisplay) flattenLines(lines [][]segment.Segment, width int) []segment.Segment {
 	var result []segment.Segment
 	for i, line := range lines {
 		if i > 0 {
 			result = append(result, segment.Segment{Text: "\n"})
 		}
-		if width > 0 {
-			if d.truncateEllipsis && segment.TotalCellLength(line) > width {
-				line = segment.AdjustLineLength(line, width-1, false)
-				lastStyle := segment.LastStyle(line)
-				line = append(line, segment.Segment{Text: "…", Style: lastStyle})
-			} else {
-				line = segment.AdjustLineLength(line, width, false)
-			}
-		}
-		result = append(result, line...)
+		result = append(result, d.truncateLine(line, width)...)
 	}
 	return result
+}
+
+func (d *BlockDisplay) renderFullBlockLocked(blk *Block, width int) []segment.Segment {
+	var lines [][]segment.Segment
+	now := float64(time.Now().UnixNano()) / 1e9
+	header := renderBlockHeader(blk, now)
+
+	if d.collapseOnFinish {
+		d.appendLastLineLocked(&header, blk)
+		lines = append(lines, header)
+	} else {
+		lines = append(lines, header)
+		lines = append(lines, d.appendOutputLines(blk)...)
+	}
+	return d.flattenLines(lines, width)
 }
 
 // AppendLines is a convenience helper wrapping AppendLine for a multi-line
@@ -339,6 +424,17 @@ func (w *BlockWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Flush emits any buffered partial line as a complete line. Call before
+// Finish to ensure unterminated output is not lost.
+func (w *BlockWriter) Flush() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if len(w.buf) > 0 {
+		w.display.AppendLine(w.idx, string(w.buf))
+		w.buf = w.buf[:0]
+	}
+}
+
 // Render implements console.Renderable.
 func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segment.Segment {
 	now := float64(time.Now().UnixNano()) / 1e9
@@ -352,34 +448,22 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 			continue
 		}
 		// Header
-		lines = append(lines, renderBlockHeader(blk, now))
+		header := renderBlockHeader(blk, now)
 
-		// Output lines (ring buffer capped at maxLines)
-		prefixSegs := markup.Render(d.prefix)
-		fallback := defaultOutputStyle(blk)
-		for i := range prefixSegs {
-			if prefixSegs[i].Style == nil {
-				prefixSegs[i].Style = fallback
-			}
-		}
-		for _, line := range blk.Lines {
-			lineSegs := markup.Render(line)
-			for i := range lineSegs {
-				if lineSegs[i].Style == nil {
-					lineSegs[i].Style = fallback
+		// Output lines (ring buffer capped at maxLines). Collapse finished
+		// blocks to just the header when collapseOnFinish is set.
+		if !d.collapseOnFinish || blk.Status == BlockRunning {
+			lines = append(lines, header)
+			lines = append(lines, d.appendOutputLines(blk)...)
+			if d.reserveSpace {
+				for j := len(blk.Lines); j < blk.maxLines; j++ {
+					lines = append(lines, []segment.Segment{})
 				}
 			}
-			row := make([]segment.Segment, 0, len(prefixSegs)+len(lineSegs))
-			row = append(row, prefixSegs...)
-			row = append(row, lineSegs...)
-			lines = append(lines, row)
-		}
-		// When reserveSpace is enabled, pad with blank lines up to maxLines
-		// so the block height is stable from the start.
-		if d.reserveSpace {
-			for j := len(blk.Lines); j < blk.maxLines; j++ {
-				lines = append(lines, []segment.Segment{})
-			}
+		} else {
+			d.appendLastLineLocked(&header, blk)
+			blk.collapseDisplayed = true
+			lines = append(lines, header)
 		}
 	}
 
@@ -396,24 +480,7 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 	// ponytail: measures with runewidth (tab = 0 cells); a tab-heavy line could
 	// still wrap. Expand tabs before truncating if that surfaces.
 	width := opts.Size.Width
-
-	var segs []segment.Segment
-	for i, line := range lines {
-		if i > 0 {
-			segs = append(segs, segment.Segment{Text: "\n"})
-		}
-		if width > 0 {
-			if d.truncateEllipsis && segment.TotalCellLength(line) > width {
-				line = segment.AdjustLineLength(line, width-1, false)
-				lastStyle := segment.LastStyle(line)
-				line = append(line, segment.Segment{Text: "…", Style: lastStyle})
-			} else {
-				line = segment.AdjustLineLength(line, width, false)
-			}
-		}
-		segs = append(segs, line...)
-	}
-	return segs
+	return d.flattenLines(lines, width)
 }
 
 func renderBlockHeader(blk *Block, now float64) []segment.Segment {

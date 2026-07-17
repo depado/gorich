@@ -154,7 +154,8 @@ func (l *Live) Stop() {
 	}
 }
 
-// Update changes the renderable being displayed.
+// Update changes the renderable being displayed. Has no effect when a
+// getRenderable callback is active (the callback takes precedence).
 func (l *Live) Update(r console.Renderable) {
 	l.mu.Lock()
 	l.renderable = r
@@ -185,6 +186,8 @@ func (l *Live) refresh() {
 		return
 	}
 
+	opts := l.console.Options()
+
 	// Check if the renderable has content to eject to the scrollback buffer
 	// before the live area is repainted. Ejected content is written outside
 	// the sync frame so it survives into the scrollback.
@@ -192,7 +195,6 @@ func (l *Live) refresh() {
 		PopEjects(width int, maxHeight int) []segment.Segment
 	}
 	if ej, ok := renderable.(ejectable); ok {
-		opts := l.console.Options()
 		ejected := ej.PopEjects(opts.Size.Width, opts.Size.Height)
 		if len(ejected) > 0 {
 			// Clear the old live area so ejected content overwrites it
@@ -228,7 +230,6 @@ func (l *Live) refresh() {
 	}
 
 	// Render the content
-	opts := l.console.Options()
 	segments := l.liveRender.Render(l.console, opts)
 
 	// Write all segments to buffer
@@ -265,12 +266,11 @@ func (l *Live) refreshLoop(ctx context.Context) {
 // ProcessRenderables implements console.RenderHook.
 // This intercepts all console.Render calls while Live is active.
 //
-// Note: We read console properties BEFORE acquiring l.mu to avoid deadlock.
-// console.Render() holds c.mu when calling this method, so calling
-// l.console.IsTerminal() while holding l.mu would try to acquire c.mu again.
+// LOCK ORDERING: l.mu → c.mu. Console.Render() releases c.mu before
+// calling hooks, so calling l.console methods while holding l.mu is safe.
 func (l *Live) ProcessRenderables(renderables []console.Renderable) []console.Renderable {
-	// Read console properties before acquiring l.mu to avoid deadlock
-	// (caller console.Render already holds c.mu)
+	// Read console properties before acquiring l.mu as a defensive measure
+	// — the caller has released c.mu but we don't hold l.mu yet.
 	isTerminal := l.console.IsTerminal()
 
 	l.mu.Lock()

@@ -255,6 +255,7 @@ func (c *Console) Options() Options {
 	return Options{
 		Size:        Dimensions{Width: c.width, Height: c.height},
 		MaxWidth:    c.width,
+		MaxHeight:   c.height,
 		IsTerminal:  c.isTerminal,
 		ColorSystem: colorSys,
 	}

@@ -56,23 +56,11 @@ func (lr *LiveRender) PositionCursor() segment.Control {
 		return segment.Control{}
 	}
 
-	// Build control codes:
-	// 1. Carriage return (go to column 0)
-	// 2. For each line: erase line + cursor up
-	var codes []segment.ControlCode
-
-	// Carriage return
-	codes = append(codes, segment.ControlCode{Type: segment.ControlCarriageReturn})
-
-	// Erase current line
-	codes = append(codes, segment.ControlCode{Type: segment.ControlEraseInLine, Params: []int{2}})
-
-	// Move up and erase each previous line
+	codes := append(segment.CarriageReturn().Codes, segment.EraseInLine(2).Codes...)
 	for i := 1; i < lr.lastHeight; i++ {
-		codes = append(codes, segment.ControlCode{Type: segment.ControlCursorUp, Params: []int{1}})
-		codes = append(codes, segment.ControlCode{Type: segment.ControlEraseInLine, Params: []int{2}})
+		codes = append(codes, segment.CursorUp(1).Codes...)
+		codes = append(codes, segment.EraseInLine(2).Codes...)
 	}
-
 	return segment.Control{Codes: codes}
 }
 
@@ -83,20 +71,12 @@ func (lr *LiveRender) RestoreCursor() segment.Control {
 		return segment.Control{}
 	}
 
-	// Move up to the start, then erase from cursor to end of display
 	var codes []segment.ControlCode
-
-	// Move up to the start of the live content
 	if lr.lastHeight > 1 {
-		codes = append(codes, segment.ControlCode{Type: segment.ControlCursorUp, Params: []int{lr.lastHeight - 1}})
+		codes = append(codes, segment.CursorUp(lr.lastHeight-1).Codes...)
 	}
-
-	// Carriage return
-	codes = append(codes, segment.ControlCode{Type: segment.ControlCarriageReturn})
-
-	// Erase from cursor to end of display
-	codes = append(codes, segment.ControlCode{Type: segment.ControlEraseInDisplay, Params: []int{0}})
-
+	codes = append(codes, segment.CarriageReturn().Codes...)
+	codes = append(codes, segment.EraseInDisplay(0).Codes...)
 	return segment.Control{Codes: codes}
 }
 

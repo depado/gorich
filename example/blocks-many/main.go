@@ -15,15 +15,24 @@ import (
 func main() {
 	nBlocks := flag.Int("n", 15, "number of blocks")
 	maxLines := flag.Int("l", 10, "max output lines per block")
+	collapse := flag.Bool("collapse", false, "collapse finished blocks to header only")
+	lastLine := flag.Bool("lastline", false, "show last output line on collapsed headers")
 	flag.Parse()
 
 	c := console.New()
-	display := live.NewBlockDisplay(
+	opts := []live.BlockDisplayOption{
 		live.WithBlockMaxLines(*maxLines),
 		live.WithBlockEllipsis(true),
 		live.WithBlockSpinnerName("dots"),
 		live.WithBlockPrefix("[dim]│ [/]"),
-	)
+	}
+	if *collapse {
+		opts = append(opts, live.WithBlockCollapseOnFinish(true))
+		if *lastLine {
+			opts = append(opts, live.WithBlockCollapseLastLine(true))
+		}
+	}
+	display := live.NewBlockDisplay(opts...)
 
 	l := live.New(c, display, live.WithAutoRefresh(true), live.WithRefreshRate(15))
 	ctx := context.Background()
