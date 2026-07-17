@@ -145,10 +145,38 @@ func NewBlockDisplay(opts ...BlockDisplayOption) *BlockDisplay {
 	return b
 }
 
+// BlockOption configures a block at creation time.
+type BlockOption func(*Block)
+
+// WithBlockSpinnerStyle overrides the spinner style for this block.
+func WithBlockSpinnerStyle(s style.Style) BlockOption {
+	return func(b *Block) { b.SpinnerStyle = &s }
+}
+
+// WithBlockRunningStyle sets the base style for the running title.
+func WithBlockRunningStyle(s style.Style) BlockOption {
+	return func(b *Block) { b.RunningStyle = &s }
+}
+
+// WithBlockSucceededStyle overrides the succeeded header style.
+func WithBlockSucceededStyle(s style.Style) BlockOption {
+	return func(b *Block) { b.SucceededStyle = &s }
+}
+
+// WithBlockFailedStyle overrides the failed header style.
+func WithBlockFailedStyle(s style.Style) BlockOption {
+	return func(b *Block) { b.FailedStyle = &s }
+}
+
+// WithBlockOutputStyle overrides the output line style.
+func WithBlockOutputStyle(s style.Style) BlockOption {
+	return func(b *Block) { b.OutputStyle = &s }
+}
+
 // Start appends a new running block for title and returns its index. Callers
 // must not mutate the returned *Block's Lines/Status directly; use AppendLine
 // and Finish instead.
-func (d *BlockDisplay) Start(title string) int {
+func (d *BlockDisplay) Start(title string, opts ...BlockOption) int {
 	blk := &Block{
 		Title:    title,
 		Status:   BlockRunning,
@@ -156,6 +184,9 @@ func (d *BlockDisplay) Start(title string) int {
 		maxLines: d.defaultMax,
 		spinner:  spinner.New(d.spinnerName),
 		start:    time.Now(),
+	}
+	for _, opt := range opts {
+		opt(blk)
 	}
 	d.mu.Lock()
 	d.blocks = append(d.blocks, blk)

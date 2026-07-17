@@ -187,8 +187,10 @@ func (a *ActiveSpinner) Stop() {
 	a.state = stateStopped
 	a.mu.Unlock()
 	a.stop()
-	a.console.WriteControl(segment.CursorUp(1))
-	a.console.WriteControl(segment.CarriageReturn())
+	if !a.live.transient {
+		a.console.WriteControl(segment.CursorUp(1))
+		a.console.WriteControl(segment.CarriageReturn())
+	}
 }
 
 func (a *ActiveSpinner) stop() {
