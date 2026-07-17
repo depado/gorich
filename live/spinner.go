@@ -33,6 +33,7 @@ type ActiveSpinner struct {
 	style       *style.Style
 	speed       float64
 	refreshRate float64
+	ctx         context.Context
 }
 
 type ActiveSpinnerOption func(*ActiveSpinner)
@@ -67,6 +68,14 @@ func WithSpinnerConsole(c *console.Console) ActiveSpinnerOption {
 	}
 }
 
+// WithSpinnerContext sets the context for the spinner's Live display.
+// The refresh loop exits cleanly when the context is cancelled.
+func WithSpinnerContext(ctx context.Context) ActiveSpinnerOption {
+	return func(a *ActiveSpinner) {
+		a.ctx = ctx
+	}
+}
+
 func StartSpinner(text string, opts ...ActiveSpinnerOption) *ActiveSpinner {
 	a := &ActiveSpinner{
 		text:        text,
@@ -74,6 +83,7 @@ func StartSpinner(text string, opts ...ActiveSpinnerOption) *ActiveSpinner {
 		name:        "dots",
 		speed:       1.0,
 		refreshRate: 10.0,
+		ctx:         context.Background(),
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -95,7 +105,7 @@ func StartSpinner(text string, opts ...ActiveSpinnerOption) *ActiveSpinner {
 	)
 
 	a.started = true
-	a.live.Start(context.Background())
+	a.live.Start(a.ctx)
 	return a
 }
 

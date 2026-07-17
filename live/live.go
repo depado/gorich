@@ -95,6 +95,11 @@ func (l *Live) Start(ctx context.Context) {
 	l.started = true
 	l.stopCh = make(chan struct{})
 	l.doneCh = make(chan struct{})
+	// Launch the refresh goroutine before releasing the lock so Stop()
+	// always has a goroutine to wait on via doneCh.
+	if l.autoRefresh {
+		go l.refreshLoop(ctx)
+	}
 	l.mu.Unlock()
 
 	// Hide cursor
@@ -107,11 +112,6 @@ func (l *Live) Start(ctx context.Context) {
 
 	// Initial render
 	l.refresh()
-
-	// Start refresh goroutine if auto-refresh is enabled
-	if l.autoRefresh {
-		go l.refreshLoop(ctx)
-	}
 }
 
 // Stop ends the live display.

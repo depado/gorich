@@ -291,6 +291,7 @@ func (c *Console) Render(r Renderable) {
 	opts := Options{
 		Size:        Dimensions{Width: c.width, Height: c.height},
 		MaxWidth:    c.width,
+		MaxHeight:   c.height,
 		IsTerminal:  c.isTerminal,
 		ColorSystem: colorSys,
 	}
