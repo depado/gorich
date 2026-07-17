@@ -491,12 +491,6 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 		lines = append(lines, d.renderBlockLines(blk, now, true)...)
 	}
 
-	// Crop to terminal height: keep the bottom N lines so old blocks scroll off.
-	maxHeight := opts.Size.Height
-	if maxHeight > 0 && len(lines) > maxHeight {
-		lines = lines[len(lines)-maxHeight:]
-	}
-
 	// Truncate each line to the terminal width so a long line never wraps onto
 	// a second physical row. The Live cursor math counts one row per logical
 	// line, so a wrapped line would leave stale rows the erase can't reach,
