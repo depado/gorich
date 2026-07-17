@@ -1,9 +1,7 @@
 package live
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"strings"
 	"sync"
 	"time"
@@ -15,56 +13,7 @@ import (
 	"github.com/depado/gorich/style"
 )
 
-// BlockStatus tracks the lifecycle of a single block.
-type BlockStatus int
-
-const (
-	// BlockRunning means the block's command is in progress and the spinner animates.
-	BlockRunning BlockStatus = iota
-	// BlockSucceeded means the block finished successfully (exit code 0).
-	BlockSucceeded
-	// BlockFailed means the block's command returned a non-zero exit code.
-	BlockFailed
-)
-
-// Block is a single entry in a BlockDisplay. It has a header (title + status
-// indicator) and a ring buffer of the last maxLines output lines, which stay
-// visible after the block finishes.
-//
-// Blocks are not created directly; use BlockDisplay.Start to add one.
-type Block struct {
-	Title    string
-	Status   BlockStatus
-	Lines    []string
-	maxLines int
-	Elapsed  time.Duration
-	ExitCode int
-
-	// SpinnerStyle overrides the running-frame spinner style. nil = dim cyan.
-	SpinnerStyle *style.Style
-	// RunningStyle is the base style for the running header title. Markup in the
-	// title layers on top of it (overriding only what it sets), so use this for a
-	// uniform default look and markup for per-title tweaks. nil = unstyled.
-	RunningStyle *style.Style
-	// SucceededStyle overrides the succeeded header title style. nil = green bold.
-	SucceededStyle *style.Style
-	// FailedStyle overrides the failed header title style. nil = red bold.
-	FailedStyle *style.Style
-	// OutputStyle overrides the per-line output style. nil = dim.
-	OutputStyle *style.Style
-
-	// spinner is owned by BlockDisplay, not the caller.
-	spinner *spinner.Spinner
-	start   time.Time
-
-	ejected bool // removed from live display
-
-	// Internal: set by Render when a finished block is displayed as
-	// collapsed, cleared by PopEjects after rendering the scrollback
-	// commit. Ensures finished blocks are visible at least once before
-	// being ejected.
-	collapseDisplayed bool
-}
+var _ console.Renderable = (*BlockDisplay)(nil)
 
 // BlockDisplay is a [console.Renderable] that shows a growing list of blocks
 // in a stable terminal region via [Live]. Each block has a header line
@@ -143,34 +92,6 @@ func NewBlockDisplay(opts ...BlockDisplayOption) *BlockDisplay {
 		opt(b)
 	}
 	return b
-}
-
-// BlockOption configures a block at creation time.
-type BlockOption func(*Block)
-
-// WithBlockSpinnerStyle overrides the spinner style for this block.
-func WithBlockSpinnerStyle(s style.Style) BlockOption {
-	return func(b *Block) { b.SpinnerStyle = &s }
-}
-
-// WithBlockRunningStyle sets the base style for the running title.
-func WithBlockRunningStyle(s style.Style) BlockOption {
-	return func(b *Block) { b.RunningStyle = &s }
-}
-
-// WithBlockSucceededStyle overrides the succeeded header style.
-func WithBlockSucceededStyle(s style.Style) BlockOption {
-	return func(b *Block) { b.SucceededStyle = &s }
-}
-
-// WithBlockFailedStyle overrides the failed header style.
-func WithBlockFailedStyle(s style.Style) BlockOption {
-	return func(b *Block) { b.FailedStyle = &s }
-}
-
-// WithBlockOutputStyle overrides the output line style.
-func WithBlockOutputStyle(s style.Style) BlockOption {
-	return func(b *Block) { b.OutputStyle = &s }
 }
 
 // Start appends a new running block for title and returns its index. Callers
@@ -431,51 +352,6 @@ func (d *BlockDisplay) AppendLines(idx int, s string) {
 	}
 }
 
-// BlockWriter is an [io.Writer] that buffers partial lines and flushes
-// complete lines to [BlockDisplay.AppendLine]. Create one per block with
-// [BlockDisplay.NewWriter] and use it as the stdout/stderr sink for a child
-// process. It is safe for concurrent use within a single block.
-type BlockWriter struct {
-	display *BlockDisplay
-	idx     int
-	mu      sync.Mutex
-	buf     []byte
-}
-
-// NewWriter returns an io.Writer that appends completed lines to block idx.
-func (d *BlockDisplay) NewWriter(idx int) *BlockWriter {
-	return &BlockWriter{display: d, idx: idx}
-}
-
-// Write implements io.Writer. It is safe for concurrent use.
-func (w *BlockWriter) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.buf = append(w.buf, p...)
-	for {
-		i := bytes.IndexByte(w.buf, '\n')
-		if i < 0 {
-			break
-		}
-		line := string(w.buf[:i])
-		w.buf = w.buf[i+1:]
-		line = strings.TrimRight(line, "\r")
-		w.display.AppendLine(w.idx, line)
-	}
-	return len(p), nil
-}
-
-// Flush emits any buffered partial line as a complete line. Call before
-// Finish to ensure unterminated output is not lost.
-func (w *BlockWriter) Flush() {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if len(w.buf) > 0 {
-		w.display.AppendLine(w.idx, string(w.buf))
-		w.buf = w.buf[:0]
-	}
-}
-
 // Render implements console.Renderable.
 func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segment.Segment {
 	now := nowSeconds()
@@ -587,8 +463,6 @@ func defaultOutputStyle(b *Block) *style.Style {
 	}
 	return &style.Dim
 }
-
-var _ io.Writer = (*BlockWriter)(nil)
 var _ console.Renderable = (*BlockDisplay)(nil)
 
 // nowSeconds returns the current time as seconds since Unix epoch, for
