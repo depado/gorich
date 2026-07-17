@@ -170,6 +170,16 @@ func TotalCellLength(segments []Segment) int {
 	return total
 }
 
+// LastStyle returns the Style of the last non-control segment, or nil.
+func LastStyle(segments []Segment) *style.Style {
+	for i := len(segments) - 1; i >= 0; i-- {
+		if !segments[i].IsControl() {
+			return segments[i].Style
+		}
+	}
+	return nil
+}
+
 // Simplify merges adjacent segments with the same style.
 func Simplify(segments []Segment) []Segment {
 	if len(segments) <= 1 {

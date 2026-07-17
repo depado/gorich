@@ -36,6 +36,14 @@ func (lr *LiveRender) SetRenderable(r console.Renderable) {
 	lr.renderable = r
 }
 
+// Reset clears the last rendered shape so the next PositionCursor is a no-op.
+// Use after content was committed to scrollback and the live area needs a
+// fresh start with no old content to erase.
+func (lr *LiveRender) Reset() {
+	lr.lastHeight = 0
+	lr.lastWidth = 0
+}
+
 // Shape returns the last rendered shape (width, height).
 func (lr *LiveRender) Shape() (width, height int) {
 	return lr.lastWidth, lr.lastHeight

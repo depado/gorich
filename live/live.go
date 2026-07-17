@@ -185,6 +185,34 @@ func (l *Live) refresh() {
 		return
 	}
 
+	// Check if the renderable has content to eject to the scrollback buffer
+	// before the live area is repainted. Ejected content is written outside
+	// the sync frame so it survives into the scrollback.
+	type ejectable interface {
+		PopEjects(width int, maxHeight int) []segment.Segment
+	}
+	if ej, ok := renderable.(ejectable); ok {
+		opts := l.console.Options()
+		ejected := ej.PopEjects(opts.Size.Width, opts.Size.Height)
+		if len(ejected) > 0 {
+			// Clear the old live area so ejected content overwrites it
+			clearCtrl := l.liveRender.PositionCursor()
+			if len(clearCtrl.Codes) > 0 {
+				l.console.WriteControl(clearCtrl)
+			}
+			// Write ejected content. The trailing \n pushes it into
+			// the scrollback and leaves the cursor where the new live
+			// area should start.
+			colorSys := l.console.ColorSystem()
+			for _, seg := range ejected {
+				l.console.WriteString(seg.Render(colorSys))
+			}
+			// Reset cursor tracking so the next PositionCursor is a
+			// no-op — the ejected content already scrolled away.
+			l.liveRender.Reset()
+		}
+	}
+
 	// Build everything into a single buffer for flicker-free output
 	var buf strings.Builder
 

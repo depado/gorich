@@ -56,6 +56,8 @@ type Block struct {
 	// spinner is owned by BlockDisplay, not the caller.
 	spinner *spinner.Spinner
 	start   time.Time
+
+	ejected bool
 }
 
 // BlockDisplay is a [console.Renderable] that shows a growing list of blocks
@@ -68,12 +70,13 @@ type Block struct {
 // Finish to set its final status + elapsed time. A BlockDisplay is safe for
 // concurrent use: Start/AppendLine/Finish may be called from any goroutine.
 type BlockDisplay struct {
-	mu           sync.Mutex
-	blocks       []*Block
-	defaultMax   int
-	spinnerName  string
-	reserveSpace bool
-	prefix       string
+	mu              sync.Mutex
+	blocks          []*Block
+	defaultMax      int
+	spinnerName     string
+	reserveSpace    bool
+	prefix          string
+	truncateEllipsis bool
 }
 
 // BlockDisplayOption configures a BlockDisplay.
@@ -100,6 +103,12 @@ func WithBlockPrefix(prefix string) BlockDisplayOption {
 // WithBlockSpinnerName sets the spinner animation used for running blocks (default "dots").
 func WithBlockSpinnerName(name string) BlockDisplayOption {
 	return func(b *BlockDisplay) { b.spinnerName = name }
+}
+
+// WithBlockEllipsis adds a "…" suffix when a line is truncated to fit the
+// terminal width, signaling that more content exists beyond the edge.
+func WithBlockEllipsis(enable bool) BlockDisplayOption {
+	return func(b *BlockDisplay) { b.truncateEllipsis = enable }
 }
 
 // NewBlockDisplay creates a BlockDisplay.
@@ -169,6 +178,121 @@ func (d *BlockDisplay) Finish(idx int, exitCode int) {
 	}
 }
 
+// PopEjects returns the rendered content of finished, non-ejected blocks
+// that should be committed to the scrollback buffer. Ejection only happens
+// when the live display would exceed maxHeight rows — if everything fits,
+// finished blocks stay visible in the live area.
+//
+// After this call the ejected blocks are marked as ejected and will no
+// longer appear in Render().
+func (d *BlockDisplay) PopEjects(width int, maxHeight int) []segment.Segment {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if maxHeight <= 0 {
+		return nil
+	}
+
+	totalLines := d.countLinesLocked()
+	if totalLines <= maxHeight {
+		return nil
+	}
+
+	// Eject oldest finished blocks until the remaining content fits.
+	linesToRemove := totalLines - maxHeight
+
+	var segs []segment.Segment
+	removed := 0
+	for _, blk := range d.blocks {
+		if blk.ejected || blk.Status == BlockRunning {
+			continue
+		}
+		blkLines := 1 // header
+		if d.reserveSpace {
+			blkLines += blk.maxLines
+		} else {
+			blkLines += len(blk.Lines)
+		}
+
+		if len(segs) > 0 {
+			segs = append(segs, segment.Segment{Text: "\n"})
+		}
+		segs = append(segs, d.renderFullBlockLocked(blk, width)...)
+		blk.ejected = true
+		removed += blkLines
+		if removed >= linesToRemove {
+			break
+		}
+	}
+	if len(segs) > 0 {
+		segs = append(segs, segment.Segment{Text: "\n"})
+	}
+	return segs
+}
+
+func (d *BlockDisplay) countLinesLocked() int {
+	total := 0
+	for _, blk := range d.blocks {
+		if blk.ejected {
+			continue
+		}
+		total++ // header
+		if d.reserveSpace {
+			// ReserveSpace pads each block to maxLines with blanks.
+			outputLines := len(blk.Lines)
+			if outputLines < blk.maxLines {
+				outputLines = blk.maxLines
+			}
+			total += outputLines
+		} else {
+			total += len(blk.Lines)
+		}
+	}
+	return total
+}
+
+func (d *BlockDisplay) renderFullBlockLocked(blk *Block, width int) []segment.Segment {
+	var lines [][]segment.Segment
+	now := float64(time.Now().UnixNano()) / 1e9
+	lines = append(lines, renderBlockHeader(blk, now))
+	prefixSegs := markup.Render(d.prefix)
+	fallback := defaultOutputStyle(blk)
+	for i := range prefixSegs {
+		if prefixSegs[i].Style == nil {
+			prefixSegs[i].Style = fallback
+		}
+	}
+	for _, line := range blk.Lines {
+		lineSegs := markup.Render(line)
+		for i := range lineSegs {
+			if lineSegs[i].Style == nil {
+				lineSegs[i].Style = fallback
+			}
+		}
+		row := make([]segment.Segment, 0, len(prefixSegs)+len(lineSegs))
+		row = append(row, prefixSegs...)
+		row = append(row, lineSegs...)
+		lines = append(lines, row)
+	}
+	var result []segment.Segment
+	for i, line := range lines {
+		if i > 0 {
+			result = append(result, segment.Segment{Text: "\n"})
+		}
+		if width > 0 {
+			if d.truncateEllipsis && segment.TotalCellLength(line) > width {
+				line = segment.AdjustLineLength(line, width-1, false)
+				lastStyle := segment.LastStyle(line)
+				line = append(line, segment.Segment{Text: "…", Style: lastStyle})
+			} else {
+				line = segment.AdjustLineLength(line, width, false)
+			}
+		}
+		result = append(result, line...)
+	}
+	return result
+}
+
 // AppendLines is a convenience helper wrapping AppendLine for a multi-line
 // string without a trailing newline.
 func (d *BlockDisplay) AppendLines(idx int, s string) {
@@ -224,15 +348,13 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 
 	var lines [][]segment.Segment
 	for _, blk := range d.blocks {
+		if blk.ejected {
+			continue
+		}
 		// Header
 		lines = append(lines, renderBlockHeader(blk, now))
 
-		// Output lines (kept after finish, not collapsed). The ring buffer
-		// caps at maxLines so the block grows as output arrives but never
-		// exceeds maxLines.
-		// Output lines (kept after finish, not collapsed). The ring buffer
-		// caps at maxLines so the block grows as output arrives but never
-		// exceeds maxLines.
+		// Output lines (ring buffer capped at maxLines)
 		prefixSegs := markup.Render(d.prefix)
 		fallback := defaultOutputStyle(blk)
 		for i := range prefixSegs {
@@ -281,7 +403,13 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 			segs = append(segs, segment.Segment{Text: "\n"})
 		}
 		if width > 0 {
-			line = segment.AdjustLineLength(line, width, false)
+			if d.truncateEllipsis && segment.TotalCellLength(line) > width {
+				line = segment.AdjustLineLength(line, width-1, false)
+				lastStyle := segment.LastStyle(line)
+				line = append(line, segment.Segment{Text: "…", Style: lastStyle})
+			} else {
+				line = segment.AdjustLineLength(line, width, false)
+			}
 		}
 		segs = append(segs, line...)
 	}
