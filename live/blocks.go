@@ -340,6 +340,34 @@ func (d *BlockDisplay) renderFullBlockLocked(blk *Block, width int) []segment.Se
 	return d.flattenLines(d.renderBlockLines(blk, nowSeconds(), false), width)
 }
 
+// cropBlocks keeps only the last blocks that fit within maxHeight lines,
+// ensuring whole blocks are kept or dropped — never orphaned lines.
+func (d *BlockDisplay) cropBlocks(lines [][]segment.Segment, maxHeight int) [][]segment.Segment {
+	if maxHeight <= 0 || len(lines) <= maxHeight {
+		return lines
+	}
+	// Walk blocks from the end, counting lines per block.
+	kept := len(lines)
+	remaining := maxHeight
+	for i := len(d.blocks) - 1; i >= 0; i-- {
+		blk := d.blocks[i]
+		if blk.ejected {
+			continue
+		}
+		blkLines := d.linesPerBlockLocked(blk)
+		if remaining >= blkLines {
+			kept -= blkLines
+			remaining -= blkLines
+		} else {
+			break
+		}
+	}
+	if kept < len(lines) {
+		return lines[kept:]
+	}
+	return lines
+}
+
 // AppendLines is a convenience helper wrapping AppendLine for a multi-line
 // string without a trailing newline.
 func (d *BlockDisplay) AppendLines(idx int, s string) {
@@ -366,6 +394,9 @@ func (d *BlockDisplay) Render(c *console.Console, opts console.Options) []segmen
 		}
 		lines = append(lines, d.renderBlockLines(blk, now, true)...)
 	}
+
+	// Crop to terminal height, keeping only whole blocks.
+	lines = d.cropBlocks(lines, opts.Size.Height)
 
 	// Truncate each line to the terminal width so a long line never wraps onto
 	// a second physical row. The Live cursor math counts one row per logical
