@@ -205,7 +205,7 @@ func (l *Live) refresh() {
 			// area should start.
 			colorSys := l.console.ColorSystem()
 			for _, seg := range ejected {
-				l.console.WriteString(seg.Render(colorSys))
+				l.console.WriteString(seg.Render(colorSys)) //nolint:errcheck // terminal output is fire-and-forget
 			}
 			// Reset cursor tracking so the next PositionCursor is a
 			// no-op — the ejected content already scrolled away.
