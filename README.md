@@ -1,6 +1,55 @@
-# GoRich
+<p align="center">
+  <img alt="gorich" src="https://shieldcn.dev/header/grid.svg?title=gorich&subtitle=Beautiful+terminal+output+for+Go.&logo=go&mode=dark&align=left&border=false">
+</p>
 
-A Go port of Python's [Rich](https://github.com/Textualize/rich) library for beautiful terminal output. Features styled text with markup syntax, progress bars, tables, and customizable displays.
+<p align="center">
+  Styled text with markup syntax, multi-task progress bars, tables, spinners, and live displays. All flicker-free.
+</p>
+
+<p align="center">
+  <a href="https://github.com/depado/gorich/actions"><img src="https://shieldcn.dev/github/ci/depado/gorich.svg?variant=branded" alt="CI" /></a>
+  <a href="https://github.com/depado/gorich/releases"><img src="https://shieldcn.dev/github/release/depado/gorich.svg?variant=branded" alt="Release" /></a>
+  <a href="https://github.com/depado/gorich/blob/main/LICENSE"><img src="https://shieldcn.dev/github/license/depado/gorich.svg?variant=branded" alt="License" /></a>
+  <a href="https://github.com/depado/gorich"><img src="https://shieldcn.dev/github/last-commit/depado/gorich.svg?variant=branded" alt="Last Commit" /></a>
+  <a href="https://github.com/depado/gorich"><img src="https://shieldcn.dev/github/stars/depado/gorich.svg?variant=branded" alt="Stars" /></a>
+  <a href="https://pkg.go.dev/github.com/depado/gorich"><img src="https://shieldcn.dev/badge/go.dev-reference-00ADD8.svg?logo=go&variant=branded" alt="Go Reference" /></a>
+</p>
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start - Rich Print](#quick-start---rich-print)
+  - [Markup Syntax](#markup-syntax)
+  - [Horizontal Rules](#horizontal-rules)
+- [Progress Bars](#progress-bars)
+- [Multiple Tasks](#multiple-tasks)
+- [Custom Columns](#custom-columns)
+  - [Available Columns](#available-columns)
+- [File Progress](#file-progress)
+- [Indeterminate Progress](#indeterminate-progress)
+- [Marking Tasks as Done](#marking-tasks-as-done)
+- [Sections](#sections)
+- [Live Blocks](#live-blocks)
+  - [Block options](#block-options)
+  - [Per-block style overrides](#per-block-style-overrides)
+  - [API](#api)
+- [Configuration Options](#configuration-options)
+- [Task Options](#task-options)
+- [Tables](#tables)
+  - [Column Styling](#column-styling)
+  - [Footer, Sections & Box Styles](#footer-sections--box-styles)
+  - [Flexible Widths](#flexible-widths)
+- [Spinners](#spinners)
+- [API Reference](#api-reference)
+  - [Progress](#progress)
+  - [TaskUpdateConfig](#taskupdateconfig)
+  - [Table](#table)
+  - [Table Options](#table-options)
+- [Styling](#styling)
+  - [Predefined Styles](#predefined-styles)
+  - [Progress Bar Colors](#progress-bar-colors)
+- [Thread Safety](#thread-safety)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
 
 ## Features
 
@@ -36,11 +85,11 @@ func main() {
     gorich.Print("[bold]Hello[/] [red]World[/]")
     gorich.Print("[italic green]Success![/]")
     gorich.Print("[bold white on blue]Highlighted[/]")
-    
+
     // Hex and RGB colors
     gorich.Print("[#ff6600]Orange[/]")
     gorich.Print("[rgb(100,150,200)]Custom color[/]")
-    
+
     // Printf style (no trailing newline, like standard printf)
     gorich.Printf("[bold]Count:[/] %d", 42)
     gorich.Printf(" - [green]done[/]\n")
@@ -48,7 +97,7 @@ func main() {
     // Sprint/Sprintf return the rendered ANSI string instead of printing
     s := gorich.Sprintf("[bold]Count:[/] %d", 42)
     _ = s
-    
+
     // Horizontal rules with optional styling
     gorich.Rule("Section Title")
     gorich.Rule("Styled Rule", console.WithRuleStyle("blue"))
@@ -58,22 +107,22 @@ func main() {
 
 ### Markup Syntax
 
-| Syntax | Description |
-|--------|-------------|
-| `[bold]text[/]` | Bold text |
-| `[italic]text[/]` | Italic text* |
-| `[underline]text[/]` | Underlined text |
-| `[strike]text[/]` | Strikethrough |
-| `[red]text[/]` | Named colors |
-| `[bright_red]text[/]` | Bright variants |
-| `[#ff0000]text[/]` | Hex colors |
-| `[rgb(255,0,0)]text[/]` | RGB colors |
-| `[bold red]text[/]` | Combined styles |
-| `[white on red]text[/]` | Background colors |
-| `[bold red on white]text[/]` | Full style |
-| `\\[text]` | Escaped brackets |
+| Syntax                       | Description       |
+| ---------------------------- | ----------------- |
+| `[bold]text[/]`              | Bold text         |
+| `[italic]text[/]`            | Italic text\*     |
+| `[underline]text[/]`         | Underlined text   |
+| `[strike]text[/]`            | Strikethrough     |
+| `[red]text[/]`               | Named colors      |
+| `[bright_red]text[/]`        | Bright variants   |
+| `[#ff0000]text[/]`           | Hex colors        |
+| `[rgb(255,0,0)]text[/]`      | RGB colors        |
+| `[bold red]text[/]`          | Combined styles   |
+| `[white on red]text[/]`      | Background colors |
+| `[bold red on white]text[/]` | Full style        |
+| `\\[text]`                   | Escaped brackets  |
 
-*Italic support depends on your terminal and font. Many terminals don't support italic or require a font with italic glyphs.
+\*Italic support depends on your terminal and font. Many terminals don't support italic or require a font with italic glyphs.
 
 ### Horizontal Rules
 
@@ -125,6 +174,7 @@ func main() {
 ```
 
 Output:
+
 ```
 Processing ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  75% • 0:00:02
 ```
@@ -156,6 +206,7 @@ go func() {
 ```
 
 Output:
+
 ```
 Downloading ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% • 0:00:00
 Processing  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  65% • 0:00:03
@@ -190,18 +241,18 @@ p := progress.New(
 
 ### Available Columns
 
-| Column | Description | Example Output |
-|--------|-------------|----------------|
-| `DescriptionColumn()` | Task description, markup + auto-width (left-aligned) | `Downloading` |
-| `NewBarColumn()` | Visual progress bar (turns green when done) | `━━━━━━━━━━━━━━━━` |
-| `NewTaskProgressColumn(showSpeed)` | Percentage or speed | `75%` |
-| `NewTimeRemainingColumn()` | Estimated time remaining | `0:00:15` |
-| `NewTimeElapsedColumn()` | Elapsed time | `0:01:23` |
-| `NewSpinnerColumn()` | Animated spinner | `⠋` |
-| `NewDownloadColumn(binary)` | Download progress | `5.2 MB/10.0 MB` |
-| `NewTransferSpeedColumn(binary)` | Transfer rate | `1.5 MB/s` |
-| `NewMofNCompleteColumn(sep)` | M of N items | `50/100` |
-| `NewSeparatorColumn(text)` | Static separator | `•` |
+| Column                             | Description                                          | Example Output     |
+| ---------------------------------- | ---------------------------------------------------- | ------------------ |
+| `DescriptionColumn()`              | Task description, markup + auto-width (left-aligned) | `Downloading`      |
+| `NewBarColumn()`                   | Visual progress bar (turns green when done)          | `━━━━━━━━━━━━━━━━` |
+| `NewTaskProgressColumn(showSpeed)` | Percentage or speed                                  | `75%`              |
+| `NewTimeRemainingColumn()`         | Estimated time remaining                             | `0:00:15`          |
+| `NewTimeElapsedColumn()`           | Elapsed time                                         | `0:01:23`          |
+| `NewSpinnerColumn()`               | Animated spinner                                     | `⠋`                |
+| `NewDownloadColumn(binary)`        | Download progress                                    | `5.2 MB/10.0 MB`   |
+| `NewTransferSpeedColumn(binary)`   | Transfer rate                                        | `1.5 MB/s`         |
+| `NewMofNCompleteColumn(sep)`       | M of N items                                         | `50/100`           |
+| `NewSeparatorColumn(text)`         | Static separator                                     | `•`                |
 
 ## File Progress
 
@@ -296,6 +347,7 @@ p.Done(w1, "[green]articles[/]")
 ```
 
 Output:
+
 ```
 ⠸ Syncing depado ━━━━━━━━━━━━━━━━━━━━  45% • 0:01:23
   ⠸ articles - cloning...
@@ -311,7 +363,7 @@ identical to a single default section. Each section auto-sizes its own
 ## Live Blocks
 
 `BlockDisplay` is a `console.Renderable` for showing a growing list of
-output blocks — useful when running parallel commands and streaming their
+output blocks. Useful when running parallel commands and streaming their
 output in a live, in-place display. Each block has a header with an animated
 spinner while running (which freezes into ✓ or ✗ on completion), followed by
 its last N output lines. Wrap it in a `live.Live` for auto-refresh:
@@ -389,14 +441,14 @@ Output (in a terminal):
 
 ### Block options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `WithBlockMaxLines(n)` | `3` | Max output lines kept per block (ring buffer) |
-| `WithBlockSpinnerName(name)` | `"dots"` | Spinner animation for running blocks (see [Spinners](#spinners)) |
-| `WithBlockPrefix(prefix)` | `"  "` | String prepended to every output line. Supports [markup](#markup-syntax) — e.g. `"[blue]│ [/]"` renders a blue vertical bar |
-| — | — | Output lines passed to `AppendLine` / `BlockWriter` also support markup. Use `"[red]error[/]"` for stderr, `"[dim]output[/]"` for stdout, or plain text (inherits the block's `OutputStyle`) |
-| — | — | Block titles passed to `Start` also support markup — e.g. `display.Start("[cyan]api[/]")`. Markup layers over the status style, so `[white]auth[/]` on a finished block keeps the status bold and only overrides the color |
-| `WithBlockReserveSpace(bool)` | `false` | When true, pads each block with blank lines up to `maxLines` so the height is stable from the start. When false (default), blocks grow organically as output arrives |
+| Option                        | Default  | Description                                                                                                                                                                                                               |
+| ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WithBlockMaxLines(n)`        | `3`      | Max output lines kept per block (ring buffer)                                                                                                                                                                             |
+| `WithBlockSpinnerName(name)`  | `"dots"` | Spinner animation for running blocks (see [Spinners](#spinners))                                                                                                                                                          |
+| `WithBlockPrefix(prefix)`     | `"  "`   | String prepended to every output line. Supports [markup](#markup-syntax); e.g. `"[blue]│ [/]"` renders a blue vertical bar                                                                                                |
+| --                            | --       | Output lines passed to `AppendLine` / `BlockWriter` also support markup. Use `"[red]error[/]"` for stderr, `"[dim]output[/]"` for stdout, or plain text (inherits the block's `OutputStyle`)                              |
+| --                            | --       | Block titles passed to `Start` also support markup; e.g. `display.Start("[cyan]api[/]")`. Markup layers over the status style, so `[white]auth[/]` on a finished block keeps the status bold and only overrides the color |
+| `WithBlockReserveSpace(bool)` | `false`  | When true, pads each block with blank lines up to `maxLines` so the height is stable from the start. When false (default), blocks grow organically as output arrives                                                      |
 
 ### Per-block style overrides
 
@@ -429,7 +481,7 @@ writer := display.NewWriter(idx)          // io.Writer that flushes complete lin
 ```
 
 `BlockDisplay` implements `console.Renderable` and is safe for concurrent use
-— `Start`, `AppendLine`, `Finish`, and `BlockWriter.Write` may be called from
+`Start`, `AppendLine`, `Finish`, and `BlockWriter.Write` may be called from
 any goroutine.
 
 ## Configuration Options
@@ -486,6 +538,7 @@ func main() {
 ```
 
 Output:
+
 ```
 ┏━━━━━━━━━┳━━━━━┳━━━━━━━━━━━━━━━┓
 ┃ Name    ┃ Age ┃ City          ┃
@@ -652,6 +705,7 @@ table.NewTableWithOptions(headers,
 ## Styling
 
 GoRich automatically detects terminal capabilities and uses the best available:
+
 - Truecolor (24-bit) when `COLORTERM=truecolor`
 - 256 colors when `TERM` contains `256color`
 - Standard 16 colors otherwise
@@ -683,6 +737,7 @@ table.WithBorderStyle(&style.Cyan)
 ### Progress Bar Colors
 
 The progress bar automatically changes color based on state:
+
 - **In progress**: Magenta
 - **Finished**: Green (when task completes)
 - **Pulse animation**: Purple gradient (for indeterminate tasks)
@@ -693,9 +748,9 @@ All `Progress` methods are safe to call from multiple goroutines. Updates are pr
 
 ## Acknowledgments
 
-- [Rich](https://github.com/Textualize/rich) by Will McGugan - The original Python library
-- [cli-spinners](https://github.com/sindresorhus/cli-spinners) by Sindre Sorhus - Spinner definitions
-- [go-runewidth](https://github.com/mattn/go-runewidth) - Terminal cell width calculation
+- [Rich](https://github.com/Textualize/rich) by Will McGugan: inspired gorich's API design and rendering approach
+- [cli-spinners](https://github.com/sindresorhus/cli-spinners) by Sindre Sorhus: spinner definitions
+- [go-runewidth](https://github.com/mattn/go-runewidth): terminal cell width calculation
 
 ## License
 
